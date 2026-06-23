@@ -1,0 +1,106 @@
+name: Build on tag (Windows / MSVC / Qt)
+
+# Fires when finish-feature.sh pushes a vX.Y.Z tag. A green run proves the tagged
+# version compiles on the SAME toolchain as BUILD-Windows.md: MSVC 2022 + Qt + Ninja.
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch: {}   # allow manual runs for debugging
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Keep these aligned with qgroundcontrol/build-config.json and BUILD-Windows.md.
+  QT_VERSION: '6.10.3'
+  QT_ARCH: 'win64_msvc2022_64'
+  BUILD_TYPE: 'Release'
+
+jobs:
+  build-windows:
+    runs-on: windows-2022          # ships Visual Studio 2022 (v143)
+    timeout-minutes: 120           # QGC is a large tree; first configure is slow
+
+    steps:
+      - name: Checkout (with submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive    # pulls qgroundcontrol + its own nested submodules
+          fetch-depth: 0           # full history so the tag/describe works
+
+      - name: Set up MSVC (cl.exe on PATH)
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Install Ninja
+        uses: seanmiddleditch/gha-setup-ninja@v5
+
+      - name: Install Qt ${{ env.QT_VERSION }}
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          arch: ${{ env.QT_ARCH }}
+          # QGC pulls a broad module set. Trim/extend to match what your tree needs;
+          # an unused module costs download time, a missing one fails configure.
+          modules: >-
+            qtcharts
+            qtconnectivity
+            qtlocation
+            qtmultimedia
+            qtpositioning
+            qtquick3d
+            qtsensors
+            qtserialport
+            qtshadertools
+            qt5compat
+          cache: true              # cache the Qt install between runs
+
+      - name: Configure (qt-cmake + Ninja)
+        working-directory: qgroundcontrol
+        shell: cmd
+        run: >-
+          "%QT_ROOT_DIR%\bin\qt-cmake.bat" -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=%BUILD_TYPE%
+          -DQGC_BUILD_TESTING=OFF
+
+      - name: Build
+        working-directory: qgroundcontrol
+        shell: cmd
+        run: cmake --build build --parallel
+
+      # The build succeeding IS the verification. The steps below publish the result.
+      - name: Locate built executable
+        id: findexe
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem -Path qgroundcontrol\build -Recurse -Filter QGroundControl.exe |
+                 Select-Object -First 1
+          if (-not $exe) { Write-Error "QGroundControl.exe not found"; exit 1 }
+          "exe_path=$($exe.FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Host "Built: $($exe.FullName)"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: QGroundControl-${{ github.ref_name }}
+          path: ${{ steps.findexe.outputs.exe_path }}
+          if-no-files-found: error
+          retention-days: 14
+
+      # Attach the binary to the GitHub Release for this tag, if one exists.
+      - name: Attach binary to Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $exists = gh release view $tag 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag "${{ steps.findexe.outputs.exe_path }}" --clobber
+          } else {
+            Write-Host "No Release for $tag (tag pushed without --release). Artifact still available under Actions."
+          }

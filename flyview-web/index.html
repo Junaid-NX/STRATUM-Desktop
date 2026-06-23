@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>QGC Fly View — Static Reproduction</title>
+<style>
+  /* ============================================================
+     QGroundControl Fly View — static visual reproduction
+     Colors taken verbatim from src/QmlControls/QGCPalette.cc (dark theme)
+     ============================================================ */
+  :root {
+    --window:          #222222;
+    --windowShade:     #333333;
+    --windowShadeDark: #282828;
+    --text:            #ffffff;
+    --textDim:         #A6A6A6;
+    --button:          #626270;
+    --highlight:       #3A9BDC;
+    --green:           #00e04b;
+    --yellow:          #ffff00;
+    --orange:          #de8500;
+    --red:             #f32836;
+    --grey:            #bfbfbf;
+    --blue:            #536dff;
+    --mapTrajectory:   #be781c;
+    --brandPurple:     #4A2C6D;
+    --toolStripFG:     #ffffff;
+    --fontPx: 13px;            /* approximates ScreenTools.defaultFontPixelHeight */
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; width: 100%; overflow: hidden;
+    font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: var(--text); background: #000; }
+  #flyview { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+
+  /* ---------- MAP UNDERLAY (z 0) ---------------------------------- */
+  #map {
+    position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(120% 90% at 30% 20%, #2c3a2c 0%, #232c23 35%, #1b211c 70%, #141814 100%);
+  }
+  /* fake satellite parcels / fields */
+  #map .parcels { position: absolute; inset: 0; opacity: 0.5;
+    background-image:
+      linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px),
+      linear-gradient(0deg,  rgba(255,255,255,0.04) 1px, transparent 1px);
+    background-size: 90px 90px, 90px 90px; }
+  #map .fields { position: absolute; inset: 0; opacity: 0.35; mix-blend-mode: overlay;
+    background:
+      radial-gradient(40% 30% at 18% 70%, #4a5a36 0%, transparent 60%),
+      radial-gradient(35% 40% at 75% 30%, #3a4a55 0%, transparent 60%),
+      radial-gradient(30% 25% at 60% 80%, #5a4a36 0%, transparent 60%),
+      radial-gradient(25% 35% at 88% 78%, #2f4030 0%, transparent 60%); }
+  /* roads */
+  .road { position: absolute; background: rgba(180,180,180,0.18); }
+  .road.h { height: 6px; left: 0; right: 0; }
+  .road.v { width: 6px; top: 0; bottom: 0; }
+
+  /* mission trajectory + markers (SVG overlay) */
+  #mapVectors { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+
+  /* ---------- TOP TOOLBAR (z top) -------------------------------- */
+  #toolbar {
+    position: absolute; top: 0; left: 0; right: 0; height: 46px; z-index: 60;
+    display: flex; align-items: center; gap: 4px; padding: 0 6px;
+    background: linear-gradient(180deg, rgba(20,20,20,0.78) 0%, rgba(20,20,20,0.35) 100%);
+    backdrop-filter: blur(2px);
+  }
+  .viewBtn {
+    display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 12px;
+    background: var(--windowShadeDark); border-radius: 5px; cursor: default;
+  }
+  .viewBtn .qgcLogo { width: 22px; height: 22px; }
+  .viewBtn .chev { color: var(--textDim); font-size: 11px; }
+  .tb-sep { width: 1px; height: 26px; background: rgba(255,255,255,0.12); margin: 0 4px; }
+
+  .indicator { display: flex; align-items: center; gap: 6px; height: 38px;
+    padding: 0 8px; border-radius: 4px; }
+  .indicator:hover { background: rgba(255,255,255,0.05); }
+  .indicator svg { width: 22px; height: 22px; }
+  .ind-text { display: flex; flex-direction: column; line-height: 1.05; }
+  .ind-text .big { font-size: 13px; font-weight: 600; }
+  .ind-text .small { font-size: 10px; color: var(--textDim); }
+  .flightMode { font-size: 15px; font-weight: 600; padding: 0 10px; }
+  .spacer { flex: 1; }
+
+  /* ---------- LEFT TOOL STRIP (z widgets) ------------------------ */
+  #toolStrip {
+    position: absolute; left: 10px; top: 56px; z-index: 50;
+    width: 56px; padding: 5px 0; display: flex; flex-direction: column; gap: 2px;
+    background: rgba(40,40,40,0.88); border-radius: 8px;
+  }
+  .toolBtn {
+    width: 100%; height: 52px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 3px; cursor: default;
+    border-radius: 6px;
+  }
+  .toolBtn:hover { background: rgba(255,255,255,0.06); }
+  .toolBtn svg { width: 26px; height: 26px; }
+  .toolBtn .lbl { font-size: 9px; color: var(--toolStripFG); letter-spacing: 0.2px; }
+  .toolBtn.sep { height: 1px; background: rgba(255,255,255,0.10); border-radius: 0; margin: 3px 8px; }
+
+  /* ---------- MAP SCALE (top, right of strip) -------------------- */
+  #mapScale { position: absolute; left: 78px; top: 58px; z-index: 40;
+    color: var(--text); font-size: 11px; text-shadow: 0 1px 2px #000; }
+  #mapScale .bar { height: 8px; border: 2px solid var(--text); border-top: none;
+    width: 90px; margin-top: 2px; }
+
+  /* ---------- BOTTOM-RIGHT: TELEMETRY BAR + INSTRUMENTS ---------- */
+  #bottomRight { position: absolute; right: 10px; bottom: 10px; z-index: 50;
+    display: flex; align-items: flex-end; gap: 8px; }
+
+  #telemBar {
+    background: rgba(34,34,34,0.75); border-radius: 6px; padding: 8px 6px;
+    display: flex; gap: 2px;
+  }
+  .telCell { min-width: 78px; padding: 2px 10px; text-align: center;
+    border-right: 1px solid rgba(255,255,255,0.08); }
+  .telCell:last-child { border-right: none; }
+  .telCell .v { font-size: 18px; font-weight: 600; }
+  .telCell .v .u { font-size: 11px; font-weight: 400; color: var(--textDim); margin-left: 2px; }
+  .telCell .k { font-size: 9px; color: var(--textDim); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.4px; }
+
+  /* instrument cluster: compass + attitude (custom-layer style) */
+  #instruments { display: flex; align-items: flex-end; gap: 8px; }
+  .instrBox { background: rgba(51,51,51,0.88); border-radius: 6px; padding: 8px;
+    display: flex; align-items: center; justify-content: center; }
+
+  /* ---------- VEHICLE WARNINGS (center) -------------------------- */
+  #warnings { position: absolute; top: 64px; left: 50%; transform: translateX(-50%);
+    z-index: 45; }
+  .warnPill { background: rgba(34,34,34,0.85); color: var(--orange);
+    border: 1px solid var(--orange); border-radius: 4px; padding: 4px 14px;
+    font-size: 13px; font-weight: 600; letter-spacing: 0.3px; }
+
+  /* watermark note */
+  #note { position: absolute; left: 50%; bottom: 6px; transform: translateX(-50%);
+    z-index: 70; font-size: 10px; color: rgba(255,255,255,0.35); }
+</style>
+</head>
+<body>
+<div id="flyview">
+
+  <!-- ================= MAP UNDERLAY ================= -->
+  <div id="map">
+    <div class="parcels"></div>
+    <div class="fields"></div>
+    <div class="road h" style="top:34%"></div>
+    <div class="road h" style="top:71%; height:4px"></div>
+    <div class="road v" style="left:46%"></div>
+    <div class="road v" style="left:80%; width:4px"></div>
+  </div>
+
+  <!-- mission trajectory, home, waypoints, vehicle -->
+  <svg id="mapVectors" preserveAspectRatio="none" viewBox="0 0 1000 600">
+    <!-- trajectory -->
+    <polyline points="300,470 360,360 470,300 560,330 650,250 720,300"
+      fill="none" stroke="#be781c" stroke-width="3" stroke-dasharray="2 0" opacity="0.95"/>
+    <!-- waypoints -->
+    <g font-family="sans-serif" font-size="13" font-weight="700" fill="#fff">
+      <circle cx="360" cy="360" r="11" fill="#be781c"/><text x="360" y="365" text-anchor="middle">1</text>
+      <circle cx="470" cy="300" r="11" fill="#be781c"/><text x="470" y="305" text-anchor="middle">2</text>
+      <circle cx="560" cy="330" r="11" fill="#be781c"/><text x="560" y="335" text-anchor="middle">3</text>
+      <circle cx="650" cy="250" r="11" fill="#be781c"/><text x="650" y="255" text-anchor="middle">4</text>
+      <circle cx="720" cy="300" r="11" fill="#be781c"/><text x="720" y="305" text-anchor="middle">5</text>
+    </g>
+    <!-- home -->
+    <g>
+      <circle cx="300" cy="470" r="13" fill="#00e04b"/>
+      <text x="300" y="475" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#0c2a14">H</text>
+    </g>
+    <!-- vehicle (heading arrow in disc) -->
+    <g transform="translate(470,300) rotate(35)">
+      <circle r="18" fill="rgba(58,155,220,0.25)" stroke="#3A9BDC" stroke-width="2"/>
+      <path d="M0,-15 L11,12 L0,5 L-11,12 Z" fill="#3A9BDC" stroke="#fff" stroke-width="1.2"/>
+    </g>
+  </svg>
+
+  <!-- ================= TOP TOOLBAR ================= -->
+  <div id="toolbar">
+    <div class="viewBtn">
+      <svg class="qgcLogo" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="none" stroke="#fff" stroke-width="7"/><path d="M50 16 a34 34 0 1 0 30 18" fill="none" stroke="#fff" stroke-width="7"/><circle cx="50" cy="50" r="9" fill="#fff"/></svg>
+      <span style="font-weight:600;font-size:13px">Fly</span>
+      <span class="chev">▾</span>
+    </div>
+    <div class="tb-sep"></div>
+
+    <!-- Flight mode -->
+    <div class="indicator"><span class="flightMode">Hold</span><span class="chev" style="color:var(--textDim);font-size:11px">▾</span></div>
+    <div class="tb-sep"></div>
+
+    <!-- Armed -->
+    <div class="indicator"><span class="ind-text"><span class="big" style="color:var(--green)">Armed</span></span></div>
+
+    <!-- GPS -->
+    <div class="indicator">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="10" r="3.2"/><path d="M12 21c5-6 7-8.5 7-11a7 7 0 1 0-14 0c0 2.5 2 5 7 11z"/></svg>
+      <span class="ind-text"><span class="big">3D Fix</span><span class="small">18 sats · HDOP 0.7</span></span>
+    </div>
+
+    <!-- RC RSSI -->
+    <div class="indicator">
+      <svg viewBox="0 0 24 24" fill="#fff"><rect x="3" y="14" width="3" height="6"/><rect x="8" y="10" width="3" height="10"/><rect x="13" y="6" width="3" height="14"/><rect x="18" y="3" width="3" height="17" opacity="0.4"/></svg>
+      <span class="ind-text"><span class="big">RC</span><span class="small">82%</span></span>
+    </div>
+
+    <!-- Telemetry RSSI -->
+    <div class="indicator">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M4 9a11 11 0 0 1 16 0"/><path d="M7 12a7 7 0 0 1 10 0"/><path d="M10 15a3 3 0 0 1 4 0"/><circle cx="12" cy="18" r="1.3" fill="#fff"/></svg>
+      <span class="ind-text"><span class="big">Telem</span><span class="small">−64 dBm</span></span>
+    </div>
+
+    <!-- Battery -->
+    <div class="indicator">
+      <svg viewBox="0 0 28 24" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="7" width="20" height="11" rx="2"/><rect x="23" y="10" width="3" height="5" rx="1" fill="#fff"/><rect x="4" y="9" width="13" height="7" rx="1" fill="#00e04b" stroke="none"/></svg>
+      <span class="ind-text"><span class="big">82%</span><span class="small">15.9 V · 22 min</span></span>
+    </div>
+
+    <div class="spacer"></div>
+
+    <!-- vehicle messages -->
+    <div class="indicator">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M4 5h16v11H8l-4 4z"/></svg>
+      <span class="ind-text"><span class="big">Messages</span></span>
+    </div>
+  </div>
+
+  <!-- ================= LEFT TOOL STRIP ================= -->
+  <div id="toolStrip">
+    <!-- 3D -->
+    <div class="toolBtn"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6"><path d="M12 2 3 7v10l9 5 9-5V7z"/><path d="M3 7l9 5 9-5M12 12v10"/></svg><span class="lbl">3D</span></div>
+    <!-- Checklist -->
+    <div class="toolBtn"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M9 11l2 2 4-4"/><rect x="4" y="4" width="16" height="16" rx="2"/></svg><span class="lbl">Checklist</span></div>
+    <div class="toolBtn sep"></div>
+    <!-- Takeoff -->
+    <div class="toolBtn"><svg viewBox="0 0 72 72"><path d="M54.244 25.2c3.345 0 6.056 1.958 6.056 4.374v26.353c0 2.416-2.711 4.374-6.056 4.374H17.756c-3.345 0-6.056-1.958-6.056-4.374V29.574c0-2.416 2.711-4.374 6.056-4.374" fill="none" stroke="#fff" stroke-width="3"/><path d="M36 56.546V31.554" fill="none" stroke="#fff" stroke-width="8"/><path d="M49.962 35.639 36 11.461 22.038 35.639z" fill="#fff"/></svg><span class="lbl">Takeoff</span></div>
+    <!-- Land -->
+    <div class="toolBtn"><svg viewBox="0 0 72 72"><path d="M54.244 25.2c3.345 0 6.056 1.958 6.056 4.374v26.353c0 2.416-2.711 4.374-6.056 4.374H17.756c-3.345 0-6.056-1.958-6.056-4.374V29.574c0-2.416 2.711-4.374 6.056-4.374" fill="none" stroke="#fff" stroke-width="3"/><path d="M36.003 11.7v24.991" fill="none" stroke="#fff" stroke-width="8"/><path d="m22.041 32.606 13.962 24.179 13.961-24.179z" fill="#fff"/></svg><span class="lbl">Land</span></div>
+    <!-- RTL -->
+    <div class="toolBtn"><svg viewBox="0 0 72 72"><path d="M54.244 25.2c3.345 0 6.056 1.958 6.056 4.374v26.353c0 2.416-2.711 4.374-6.056 4.374H17.756c-3.345 0-6.056-1.958-6.056-4.374V29.574c0-2.416 2.711-4.374 6.056-4.374" fill="none" stroke="#fff" stroke-width="3"/><path d="M62.002 15.64H45.574a9.58 9.58 0 0 0-9.58 9.58l.003 11.472" fill="none" stroke="#fff" stroke-width="8"/><path d="m22.035 32.61 13.968 24.175 13.955-24.182z" fill="#fff"/></svg><span class="lbl">RTL</span></div>
+    <!-- Pause -->
+    <div class="toolBtn"><svg viewBox="0 0 72 72"><path d="M28.836 17.171v37.658M43.164 17.171v37.658" fill="none" stroke="#fff" stroke-width="8"/></svg><span class="lbl">Pause</span></div>
+    <div class="toolBtn sep"></div>
+    <!-- Additional actions (hamburger) -->
+    <div class="toolBtn"><svg viewBox="0 0 24 24" stroke="#fff" stroke-width="1.6"><path d="M3 6h18M3 12h18M3 18h18"/></svg><span class="lbl">More</span></div>
+    <!-- Gripper -->
+    <div class="toolBtn"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6"><path d="M7 4v6M17 4v6M5 10h14M9 10l-2 10M15 10l2 10"/></svg><span class="lbl">Gripper</span></div>
+  </div>
+
+  <!-- ================= MAP SCALE ================= -->
+  <div id="mapScale">100 m<div class="bar"></div></div>
+
+  <!-- ================= VEHICLE WARNINGS ================= -->
+  <div id="warnings"><div class="warnPill">ALTITUDE</div></div>
+
+  <!-- ================= BOTTOM-RIGHT CLUSTER ================= -->
+  <div id="bottomRight">
+    <div id="telemBar">
+      <div class="telCell"><div class="v">12.4<span class="u">m</span></div><div class="k">Altitude (Rel)</div></div>
+      <div class="telCell"><div class="v">3.2<span class="u">m/s</span></div><div class="k">Ground Speed</div></div>
+      <div class="telCell"><div class="v">00:02:14</div><div class="k">Flight Time</div></div>
+      <div class="telCell"><div class="v">48<span class="u">m</span></div><div class="k">Dist to Home</div></div>
+      <div class="telCell"><div class="v">152<span class="u">m</span></div><div class="k">Dist to WP</div></div>
+    </div>
+
+    <div id="instruments">
+      <!-- Compass -->
+      <div class="instrBox">
+        <svg width="92" height="92" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="46" fill="none" stroke="#fff" stroke-width="1.5"/>
+          <text x="50" y="16" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">N</text>
+          <text x="88" y="54" text-anchor="middle" fill="#bfbfbf" font-size="9">E</text>
+          <text x="50" y="92" text-anchor="middle" fill="#bfbfbf" font-size="9">S</text>
+          <text x="12" y="54" text-anchor="middle" fill="#bfbfbf" font-size="9">W</text>
+          <g transform="rotate(35 50 50)">
+            <path d="M50 12 L57 50 L50 44 L43 50 Z" fill="#f32836"/>
+            <path d="M50 88 L43 50 L50 56 L57 50 Z" fill="#cfcfcf"/>
+          </g>
+          <circle cx="50" cy="50" r="3" fill="#fff"/>
+          <text x="50" y="66" text-anchor="middle" fill="#fff" font-size="14" font-weight="700">035°</text>
+        </svg>
+      </div>
+      <!-- Attitude / artificial horizon -->
+      <div class="instrBox">
+        <svg width="92" height="92" viewBox="0 0 100 100">
+          <defs><clipPath id="adiClip"><circle cx="50" cy="50" r="44"/></clipPath></defs>
+          <g clip-path="url(#adiClip)">
+            <g transform="rotate(-8 50 50)">
+              <rect x="-50" y="-30" width="200" height="86" fill="#3a78c2"/>
+              <rect x="-50" y="56" width="200" height="120" fill="#6b4a2a"/>
+              <line x1="-50" y1="56" x2="150" y2="56" stroke="#fff" stroke-width="1.5"/>
+              <g stroke="#fff" stroke-width="1">
+                <line x1="35" y1="40" x2="65" y2="40"/><line x1="40" y1="30" x2="60" y2="30"/>
+                <line x1="35" y1="72" x2="65" y2="72"/><line x1="40" y1="82" x2="60" y2="82"/>
+              </g>
+            </g>
+          </g>
+          <circle cx="50" cy="50" r="44" fill="none" stroke="#fff" stroke-width="1.5"/>
+          <!-- fixed aircraft reference -->
+          <g stroke="#ffcc00" stroke-width="2.5" fill="none">
+            <path d="M30 50 L42 50 M58 50 L70 50"/><circle cx="50" cy="50" r="2" fill="#ffcc00" stroke="none"/>
+          </g>
+          <polygon points="50,8 46,16 54,16" fill="#ffcc00"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div id="note">Static visual reproduction of QGroundControl Fly View — non-functional mockup</div>
+</div>
+</body>
+</html>
