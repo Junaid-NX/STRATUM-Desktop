@@ -858,46 +858,7 @@ FlightMap {
         visible:            !ScreenTools.isTinyScreen && QGroundControl.corePlugin.options.flyView.showMapScale && mapControl.pipState.state === mapControl.pipState.windowState
     }
 
-    // STRATUM: AOP edit toolbar. Appears top-center only while defining the AOP.
-    // "Apply" uploads the polygon to the vehicle as an inclusion geofence;
-    // "Cancel" reverts to the boundary currently on the vehicle.
-    Rectangle {
-        id:                         aopEditBar
-        visible:                    _root._aopEditMode
-        z:                          QGroundControl.zOrderTopMost
-        anchors.horizontalCenter:   parent.horizontalCenter
-        anchors.top:                parent.top
-        anchors.topMargin:          _toolButtonTopMargin + ScreenTools.defaultFontPixelHeight
-        width:                      aopEditRow.width  + ScreenTools.defaultFontPixelWidth * 2
-        height:                     aopEditRow.height + ScreenTools.defaultFontPixelHeight
-        radius:                     ScreenTools.defaultFontPixelWidth / 2
-        color:                      qgcPal.window
-        opacity:                    0.92
-        border.color:               qgcPal.text
-        border.width:               1
-
-        QGCPalette { id: qgcPal; colorGroupEnabled: true }
-
-        RowLayout {
-            id:                 aopEditRow
-            anchors.centerIn:   parent
-            spacing:            ScreenTools.defaultFontPixelWidth
-
-            QGCLabel {
-                text:           qsTr("Define AOP — drag vertices, click edges to add")
-                Layout.alignment: Qt.AlignVCenter
-            }
-
-            QGCButton {
-                text:           qsTr("Apply")
-                primary:        true
-                onClicked:      _root.applyAOPEdit()
-            }
-
-            QGCButton {
-                text:           qsTr("Cancel")
-                onClicked:      _root.cancelAOPEdit()
-            }
-        }
-    }
+    // STRATUM: The AOP edit toolbar lives in FlyViewWidgetLayer.qml (vehicle-aware
+    // "Apply changes" / "Cancel" bar). It was previously duplicated here as a second
+    // top-center bar bound to the same _aopEditMode, producing two overlapping bars.
 }

@@ -61,8 +61,11 @@ public:
     void start                      (bool flyView) final;
     void save                       (QJsonObject& json) final;
     bool load                       (const QJsonObject& json, QString& errorString) final;
-    void loadFromVehicle            (void) final;
-    void sendToVehicle              (void) final;
+    // STRATUM: exposed to QML so the in-view AOP editor (FlyViewMap.applyAOPEdit /
+    // cancelAOPEdit) can upload/restore the inclusion geofence. These override
+    // PlanElementController but are marked Q_INVOKABLE here so QML can resolve them.
+    Q_INVOKABLE void loadFromVehicle(void) final;
+    Q_INVOKABLE void sendToVehicle  (void) final;
     void removeAll                  (void) final;
     void removeAllFromVehicle       (void) final;
     bool syncInProgress             (void) const final;
