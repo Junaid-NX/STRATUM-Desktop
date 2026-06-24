@@ -12,9 +12,10 @@ ToolStripAction {
 
     text:       qsTr("Define AOP")
     iconSource: "/qmlimages/Plan.svg"
-    // Editing the boundary while disarmed is the intended workflow, but we do
-    // not hard-block it in-flight; the geofence upload is rejected by the
-    // vehicle if unsupported. The on-map Apply/Cancel bar indicates edit mode.
-    enabled:    _activeVehicle !== null
+    // STRATUM: the AOP boundary can be defined with no vehicle connected — it is
+    // an operator planning artifact first, a geofence upload second. The on-map
+    // Apply/Cancel bar surfaces an "Apply changes" button only once a vehicle is
+    // present, at which point the polygon can be committed as an inclusion fence.
+    enabled:    true
     visible:    true
 }

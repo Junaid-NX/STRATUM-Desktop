@@ -36,6 +36,50 @@ Item {
     property bool   _layoutSpacing:         ScreenTools.defaultFontPixelWidth
     property bool   _showSingleVehicleUI:   true
 
+    QGCPalette { id: qgcPal; colorGroupEnabled: true }
+
+    // STRATUM: AOP edit-mode action bar. Shown only while defining the Area of
+    // Operations. "Apply changes" is present only when a vehicle is connected,
+    // because committing the boundary uploads it to the vehicle as an inclusion
+    // geofence; with no vehicle the operator can still lay out and lock the AOP.
+    Rectangle {
+        id:                         aopEditBar
+        visible:                    mapControl && mapControl._aopEditMode
+        z:                          QGroundControl.zOrderTopMost
+        anchors.horizontalCenter:   parent.horizontalCenter
+        anchors.top:                parent.top
+        anchors.topMargin:          parentToolInsets.topEdgeCenterInset + _toolsMargin * 2
+        radius:                     _margins
+        color:                      qgcPal.window
+        border.color:               qgcPal.groupBorder
+        border.width:               1
+        width:                      aopBarRow.width + _toolsMargin * 4
+        height:                     aopBarRow.height + _toolsMargin * 2
+
+        RowLayout {
+            id:                 aopBarRow
+            anchors.centerIn:   parent
+            spacing:            _toolsMargin * 2
+
+            QGCLabel {
+                text:       qsTr("Defining Area of Operations")
+                font.bold:  true
+            }
+
+            QGCButton {
+                text:       qsTr("Cancel")
+                onClicked:  mapControl.cancelAOPEdit()
+            }
+
+            QGCButton {
+                text:       qsTr("Apply changes")
+                primary:    true
+                visible:    _activeVehicle !== null
+                onClicked:  mapControl.applyAOPEdit()
+            }
+        }
+    }
+
     QGCToolInsets {
         id:                     _totalToolInsets
         leftEdgeTopInset:       toolStrip.leftEdgeTopInset

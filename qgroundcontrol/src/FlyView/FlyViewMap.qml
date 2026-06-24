@@ -63,8 +63,9 @@ FlightMap {
         _aopEditMode = true
     }
 
-    // Commit the AOP: lock the polygon and upload it to the vehicle as an
-    // inclusion geofence so the flight controller enforces the boundary.
+    // Commit the AOP: lock the polygon and, when a vehicle is connected, upload
+    // it as an inclusion geofence so the flight controller enforces the boundary.
+    // With no vehicle the boundary is simply locked locally (planning only).
     function applyAOPEdit() {
         if (!_geoFenceController) {
             return
@@ -72,18 +73,23 @@ FlightMap {
         for (var i = 0; i < _geoFenceController.polygons.count; i++) {
             _geoFenceController.polygons.get(i).interactive = false
         }
-        _geoFenceController.sendToVehicle()
+        if (QGroundControl.multiVehicleManager.activeVehicle) {
+            _geoFenceController.sendToVehicle()
+        }
         _aopEditMode = false
     }
 
-    // Abandon edits and restore the boundary currently held by the vehicle.
+    // Abandon edits. If a vehicle is connected, restore the boundary it holds;
+    // otherwise just drop interactivity and leave the local boundary untouched.
     function cancelAOPEdit() {
         if (!_geoFenceController) {
             _aopEditMode = false
             return
         }
         _geoFenceController.clearAllInteractive()
-        _geoFenceController.loadFromVehicle()
+        if (QGroundControl.multiVehicleManager.activeVehicle) {
+            _geoFenceController.loadFromVehicle()
+        }
         _aopEditMode = false
     }
 
