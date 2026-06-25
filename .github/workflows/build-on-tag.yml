@@ -84,16 +84,16 @@ jobs:
         id: findexe
         shell: pwsh
         run: |
-          $exe = Get-ChildItem -Path qgroundcontrol\build -Recurse -Filter QGroundControl.exe |
+          $exe = Get-ChildItem -Path qgroundcontrol\build -Recurse -Filter STRATUM.exe |
                  Select-Object -First 1
-          if (-not $exe) { Write-Error "QGroundControl.exe not found"; exit 1 }
+          if (-not $exe) { Write-Error "STRATUM.exe not found"; exit 1 }
           "exe_path=$($exe.FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           Write-Host "Built: $($exe.FullName)"
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: QGroundControl-${{ github.ref_name }}
+          name: STRATUM-${{ github.ref_name }}
           path: ${{ steps.findexe.outputs.exe_path }}
           if-no-files-found: error
           retention-days: 14
