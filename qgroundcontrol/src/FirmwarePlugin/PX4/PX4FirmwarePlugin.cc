@@ -42,6 +42,7 @@ PX4FirmwarePlugin::PX4FirmwarePlugin()
     const QString followMeFlightModeName = tr("Follow Me");
     const QString simpleFlightModeName = tr("Simple");
     const QString orbitFlightModeName = tr("Orbit");
+    const QString standoffFlightModeName = tr("Standoff");
 
     _setModeEnumToModeStringMapping({
         { PX4CustomMode::MANUAL,        manualFlightModeName      },
@@ -61,6 +62,7 @@ PX4FirmwarePlugin::PX4FirmwarePlugin()
         { PX4CustomMode::AUTO_READY,    readyFlightModeName       },
         { PX4CustomMode::AUTO_RTGS,     rtgsFlightModeName        },
         { PX4CustomMode::AUTO_TAKEOFF,  takeoffFlightModeName     },
+        { PX4CustomMode::AUTO_STANDOFF, standoffFlightModeName    },
     });
 
     static FlightModeList availableFlightModes = {
@@ -82,6 +84,7 @@ PX4FirmwarePlugin::PX4FirmwarePlugin()
         { readyFlightModeName,      PX4CustomMode::AUTO_READY,      false,  false},
         { rtgsFlightModeName,       PX4CustomMode::AUTO_RTGS,       false,  false},
         { takeoffFlightModeName,    PX4CustomMode::AUTO_TAKEOFF,    false,  false},
+        { standoffFlightModeName,   PX4CustomMode::AUTO_STANDOFF,   true,   true },
     };
 
     updateAvailableFlightModes(availableFlightModes);
@@ -405,41 +408,35 @@ bool PX4FirmwarePlugin::guidedModeGotoLocation(Vehicle* vehicle, const QGeoCoord
     return true;
 }
 
-void PX4FirmwarePlugin::guidedModeStandoff(Vehicle* vehicle, const QGeoCoordinate& standoffCoord, double amslAltitude, double headingRadians) const
+void PX4FirmwarePlugin::guidedModeStandoff(Vehicle* vehicle, const QGeoCoordinate& targetCoord, double distanceMeters, double bearingDegrees, double relativeHeight) const
 {
-    // STRATUM: single MAV_CMD_DO_REPOSITION carrying position + altitude + yaw together.
-    // Issuing goto, change-altitude and change-heading separately would send three
-    // DO_REPOSITION commands back-to-back; PX4 rejects the trailing ones as duplicates
-    // ("Waiting on previous response to same command"), so only the move survived.
-    if (qIsNaN(amslAltitude)) {
-        amslAltitude = vehicle->altitudeAMSL()->rawValue().toDouble();
-    }
-    const float yaw = qIsNaN(headingRadians) ? NAN : static_cast<float>(headingRadians);
-
-    if (vehicle->capabilityBits() & MAV_PROTOCOL_CAPABILITY_COMMAND_INT) {
-        vehicle->sendMavCommandInt(vehicle->defaultComponentId(),
-                                   MAV_CMD_DO_REPOSITION,
-                                   MAV_FRAME_GLOBAL,
-                                   true,   // show error if fails
-                                   -1.0f,
-                                   MAV_DO_REPOSITION_FLAGS_CHANGE_MODE,
-                                   0.0f,
-                                   yaw,
-                                   standoffCoord.latitude(),
-                                   standoffCoord.longitude(),
-                                   static_cast<float>(amslAltitude));
-    } else {
-        vehicle->sendMavCommand(vehicle->defaultComponentId(),
-                                MAV_CMD_DO_REPOSITION,
-                                true,   // show error if fails
-                                -1.0f,
-                                MAV_DO_REPOSITION_FLAGS_CHANGE_MODE,
-                                0.0f,
-                                yaw,
-                                static_cast<float>(standoffCoord.latitude()),
-                                static_cast<float>(standoffCoord.longitude()),
-                                static_cast<float>(amslAltitude));
-    }
+    // STRATUM: drive the in-firmware PX4 Standoff flight mode (nav state 9, custom
+    // main=AUTO/sub=20). We send the TARGET point plus the standoff geometry and let
+    // PX4 own the math: it translates the target by `distance` along `direction`, flies
+    // to the commanded height, and yaws to face the target.
+    //
+    // Wire contract: COMMAND_INT, command 31010 (MAV_CMD_USER_1 / DO_STANDOFF),
+    // frame MAV_FRAME_GLOBAL_RELATIVE_ALT.
+    //   x  = target lat (QGC scales the double to 1e7 int for COMMAND_INT)
+    //   y  = target lon
+    //   z  = standoff height above home [m] (relative; PX4 adds home altitude)
+    //   p1 = distance from target [m]
+    //   p2 = direction: compass bearing target->hold point [deg, 0=N, CW]
+    //   p3 = 0
+    //   p4 = NaN  (let PX4 choose final yaw; it faces the target)
+    //
+    // A global frame is mandatory: a local frame corrupts the lat/lon scaling.
+    vehicle->sendMavCommandInt(vehicle->defaultComponentId(),
+                               static_cast<MAV_CMD>(MAV_CMD_USER_1),    // 31010 = DO_STANDOFF
+                               MAV_FRAME_GLOBAL_RELATIVE_ALT,
+                               true,   // show error if fails
+                               static_cast<float>(distanceMeters),      // param1: distance
+                               static_cast<float>(bearingDegrees),      // param2: direction (deg)
+                               0.0f,                                    // param3
+                               NAN,                                     // param4: yaw -> PX4 faces target
+                               targetCoord.latitude(),                  // x: target lat
+                               targetCoord.longitude(),                 // y: target lon
+                               static_cast<float>(relativeHeight));     // z: relative height
 }
 
 typedef struct {

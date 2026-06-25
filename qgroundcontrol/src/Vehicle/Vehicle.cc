@@ -1908,22 +1908,24 @@ bool Vehicle::guidedModeGotoLocation(const QGeoCoordinate& gotoCoord, double for
     return _firmwarePlugin->guidedModeGotoLocation(this, gotoCoord, forwardFlightLoiterRadius);
 }
 
-bool Vehicle::guidedModeStandoff(const QGeoCoordinate& standoffCoord, double amslAltitude, double headingDegrees)
+bool Vehicle::guidedModeStandoff(const QGeoCoordinate& targetCoord, double distanceMeters, double bearingDegrees, double relativeHeight)
 {
     if (!_vehicleSupports->guidedMode()) {
         QGC::showAppMessage(guided_mode_not_supported_by_vehicle);
         return false;
     }
-    if (!coordinate().isValid() || !standoffCoord.isValid()) {
+    if (!coordinate().isValid() || !targetCoord.isValid()) {
         return false;
     }
+    // The hold point sits `distance` from the target on `bearing`; range-check against it
+    // so a far target plus a long standoff cannot fling the vehicle past the configured limit.
+    const QGeoCoordinate holdPoint = targetCoord.atDistanceAndAzimuth(distanceMeters, bearingDegrees);
     double maxDistance = SettingsManager::instance()->flyViewSettings()->maxGoToLocationDistance()->rawValue().toDouble();
-    if (coordinate().distanceTo(standoffCoord) > maxDistance) {
+    if (coordinate().distanceTo(holdPoint) > maxDistance) {
         QGC::showAppMessage(QString("Standoff point is too far. Must be less than %1 %2.").arg(qRound(FactMetaData::metersToAppSettingsHorizontalDistanceUnits(maxDistance).toDouble())).arg(FactMetaData::appSettingsHorizontalDistanceUnitsString()));
         return false;
     }
-    const double headingRadians = qIsNaN(headingDegrees) ? qQNaN() : qDegreesToRadians(headingDegrees);
-    _firmwarePlugin->guidedModeStandoff(this, standoffCoord, amslAltitude, headingRadians);
+    _firmwarePlugin->guidedModeStandoff(this, targetCoord, distanceMeters, bearingDegrees, relativeHeight);
     return true;
 }
 

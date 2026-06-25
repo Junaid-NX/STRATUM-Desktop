@@ -26,13 +26,9 @@ Item {
     property real   _standoffDistance:  0
     property real   _standoffHeight:    0
     property real   _standoffAngle:     0
-    property bool   _awaitingArrival:   false
     // True from the moment a standoff is committed until it is cancelled. Drives the
     // on-map surveillance circle (centre = target, radius = standoff distance).
     property bool   _standoffActive:    false
-
-    // Arrival tolerance scales gently with distance, floored for short standoffs.
-    readonly property real _arrivalThresholdMeters: Math.max(5, _standoffDistance * 0.08)
 
     // Emitted whenever a new standoff point is computed; consumers (e.g. the map)
     // may use this to render a target / standoff indicator.
@@ -58,19 +54,8 @@ Item {
 
     // Open the parameter dialog for a freshly clicked target.
     function showStandoffDialog(targetCoordinate) {
-        _awaitingArrival  = false
         _targetCoordinate = targetCoordinate
         standoffDialogFactory.open()
-    }
-
-    // Current AMSL altitude for the standoff/orbit (NaN if home altitude unknown).
-    function _standoffAmslAltitude() {
-        // NOTE: on a QML QGeoCoordinate, isValid is a PROPERTY (no parens); calling it
-        // as a function throws and aborts the whole standoff command.
-        if (!_activeVehicle || !_activeVehicle.homePosition.isValid || isNaN(_activeVehicle.homePosition.altitude)) {
-            return NaN
-        }
-        return _activeVehicle.homePosition.altitude + _standoffHeight
     }
 
     // distanceUnits / heightUnits are in the user's configured units; angleDeg is a
@@ -82,20 +67,19 @@ Item {
         _standoffDistance = _unitsConversion.appSettingsHorizontalDistanceUnitsToMeters(distanceUnits)
         _standoffHeight   = _unitsConversion.appSettingsVerticalDistanceUnitsToMeters(heightUnits)
         _standoffAngle    = angleDeg
+        // Client-side offset point is used ONLY to draw the on-map surveillance circle.
+        // PX4 recomputes the real hold point from the target + geometry we send below.
         _standoffPoint    = _targetCoordinate.atDistanceAndAzimuth(_standoffDistance, _standoffAngle)
         standoffPointChanged(_targetCoordinate, _standoffPoint)
 
-        // STRATUM: APPROACH facing the target (bearing from the vehicle's CURRENT
-        // position to the target), not the final standoff direction, so an onboard
-        // camera keeps the target in view during transit. The final standoff heading is
-        // applied only once the vehicle reaches the point (see the arrival handler).
-        var approachHeadingDeg = _activeVehicle.coordinate.azimuthTo(_targetCoordinate)
+        // STRATUM: drive the in-firmware PX4 Standoff flight mode. We hand PX4 the TARGET
+        // point plus the standoff geometry (distance, bearing, RELATIVE height); PX4 owns
+        // the offset math and yaws to face the target itself. Send the geometry BEFORE the
+        // mode switch so the standoff_setpoint exists when the mode activates.
+        _activeVehicle.guidedModeStandoff(_targetCoordinate, _standoffDistance, _standoffAngle, _standoffHeight)
+        _activeVehicle.flightMode = "Standoff"
 
-        // Single combined reposition: position + altitude + approach heading.
-        _activeVehicle.guidedModeStandoff(_standoffPoint, _standoffAmslAltitude(), approachHeadingDeg)
-
-        _standoffActive  = true
-        _awaitingArrival = true
+        _standoffActive = true
     }
 
     // Promote the static standoff into an orbit using the same geometry.
@@ -108,31 +92,13 @@ Item {
         // now depicts the active orbit area.
         var amslAltitude = _activeVehicle.homePosition.altitude + _standoffHeight
         _activeVehicle.guidedModeOrbit(_targetCoordinate, _standoffDistance, amslAltitude)
-        _awaitingArrival = false
     }
 
     function cancelStandoff() {
-        _awaitingArrival = false
-        _standoffActive  = false
+        _standoffActive = false
     }
 
-    // Arrival detection: when the vehicle reaches the standoff point, rotate to the final
-    // heading. Read the live coordinate directly rather than relying on the notify arg.
-    Connections {
-        target:  _activeVehicle
-        enabled: root._awaitingArrival && _activeVehicle
-
-        function onCoordinateChanged() {
-            if (!root._awaitingArrival || !_activeVehicle) {
-                return
-            }
-            if (_activeVehicle.coordinate.distanceTo(root._standoffPoint) <= root._arrivalThresholdMeters) {
-                root._awaitingArrival = false
-                // STRATUM: only now, at the standoff point, rotate to the final heading
-                // (face the target). No orbit prompt — the operator switches to Orbit
-                // from the flight-mode menu if desired; the circle stays visible.
-                root._activeVehicle.guidedModeChangeHeading(root._targetCoordinate)
-            }
-        }
-    }
+    // STRATUM: no client-side arrival/heading handling. The PX4 Standoff flight mode flies
+    // to the hold point and yaws to face the target on its own; an extra DO_REPOSITION or
+    // change-heading command would fight the mode.
 }

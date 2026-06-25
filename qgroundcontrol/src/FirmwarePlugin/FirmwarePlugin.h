@@ -231,11 +231,13 @@ public:
     /// @return true: goto command accepted, false: goto failed (vehicle not moved)
     virtual bool guidedModeGotoLocation(Vehicle *vehicle, const QGeoCoordinate &gotoCoord, double forwardFlightLoiterRadius = 0.0) const;
 
-    /// STRATUM: Command a standoff hold as a single reposition (position + altitude + heading).
-    ///     @param standoffCoord  Standoff point (lat/lon)
-    ///     @param amslAltitude   Target AMSL altitude (NaN = keep current)
-    ///     @param headingRadians Absolute heading to hold at the point (NaN = no change)
-    virtual void guidedModeStandoff(Vehicle *vehicle, const QGeoCoordinate &standoffCoord, double amslAltitude, double headingRadians) const;
+    /// STRATUM: Command a standoff hold. Sends the TARGET point plus the standoff
+    /// geometry to the firmware, which owns the offset math (drives PX4 Standoff mode).
+    ///     @param targetCoord     Target point clicked by the operator (lat/lon)
+    ///     @param distanceMeters  Standoff distance from the target [m]
+    ///     @param bearingDegrees  Direction from target to hold point [deg, 0=N, CW]
+    ///     @param relativeHeight  Standoff height above home [m] (relative, NOT AMSL)
+    virtual void guidedModeStandoff(Vehicle *vehicle, const QGeoCoordinate &targetCoord, double distanceMeters, double bearingDegrees, double relativeHeight) const;
 
     /// Command vehicle to change altitude
     ///     @param altitudeChange If > 0, go up by amount specified, if < 0, go down by amount specified

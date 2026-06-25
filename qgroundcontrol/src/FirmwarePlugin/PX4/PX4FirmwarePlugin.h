@@ -43,7 +43,7 @@ public:
     bool                mulirotorSpeedLimitsAvailable(Vehicle* vehicle) const override;
     bool                fixedWingAirSpeedLimitsAvailable(Vehicle* vehicle) const override;
     bool                guidedModeGotoLocation          (Vehicle* vehicle, const QGeoCoordinate& gotoCoord, double forwardFlightLoiterRadius) const override;
-    void                guidedModeStandoff              (Vehicle* vehicle, const QGeoCoordinate& standoffCoord, double amslAltitude, double headingRadians) const override;
+    void                guidedModeStandoff              (Vehicle* vehicle, const QGeoCoordinate& targetCoord, double distanceMeters, double bearingDegrees, double relativeHeight) const override;
     void                guidedModeChangeAltitude        (Vehicle* vehicle, double altitudeRel, bool pauseVehicle) override;
     void                guidedModeChangeGroundSpeedMetersSecond(Vehicle* vehicle, double groundspeed) const override;
     void                guidedModeChangeEquivalentAirspeedMetersSecond(Vehicle* vehicle, double airspeed_equiv) const override;
