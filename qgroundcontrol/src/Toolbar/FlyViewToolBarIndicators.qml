@@ -42,5 +42,13 @@ Item {
                 visible:            item.showIndicator
             }
         }
+
+        // STRATUM: product mark at the right end of the toolbar.
+        QGCVectorImage {
+            anchors.verticalCenter: parent.verticalCenter
+            height:                 ScreenTools.defaultFontPixelHeight * 1.8
+            width:                  height
+            source:                 "/res/QGCLogoFull.svg"
+        }
     }
 }

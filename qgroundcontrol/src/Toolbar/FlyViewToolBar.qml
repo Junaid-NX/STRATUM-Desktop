@@ -78,7 +78,8 @@ Item {
                             id:                 qgcButton
                             objectName:         "toolbar_qgcLogo"
                             Layout.fillHeight:  true
-                            icon.source:        "/res/QGCLogoFull.svg"
+                            // STRATUM: NEXAM (NX) company mark on the left.
+                            icon.source:        "/res/NXLogo.svg"
                             logo:               true
                             onClicked:          mainWindow.showToolSelectDialog()
                         }

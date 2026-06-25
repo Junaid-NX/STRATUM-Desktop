@@ -11,6 +11,7 @@
         <file alias="chevron-double-right.svg">resources/chevron-double-right.svg</file>
         <file alias="GeoFence.svg">resources/GeoFence.svg</file>
         <file alias="QGCLogoFull.svg">resources/QGCLogoFull.svg</file>
+        <file alias="NXLogo.svg">resources/NXLogo.svg</file>
         <file alias="QGCLogoWhite.svg">resources/QGCLogoWhite.svg</file>
         <file alias="QGCLogoArrow.svg">resources/QGCLogoArrow.svg</file>
         <file alias="rtl.svg">resources/rtl.svg</file>
