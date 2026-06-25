@@ -10,15 +10,18 @@ ToolStripActionList {
     signal displayPreFlightChecklist
     signal defineAOP
 
+    // STRATUM: focused command strip - AOP, the in-scope flight commands, the two
+    // surfaced guided adjustments (Altitude, Max Speed), and Engage. The full flight
+    // mode set remains available via the toolbar dropdown for development. The legacy
+    // additional-actions panel, gripper, 3D and checklist tool buttons were removed.
     model: [
-        Viewer3DShowAction { },
-        PreFlightCheckListShowAction { onTriggered: displayPreFlightChecklist() },
         FlyViewAOPAction { onTriggered: defineAOP() },
         GuidedActionTakeoff { },
+        GuidedActionRTL { },                // Return (RTB)
+        GuidedActionHold { },
         GuidedActionLand { },
-        GuidedActionRTL { },
-        GuidedActionPause { },
-        FlyViewAdditionalActionsButton { },
-        FlyViewGripperButton { }
+        GuidedActionChangeAltitude { },
+        GuidedActionChangeSpeed { },        // Max Speed
+        EngageAction { }
     ]
 }

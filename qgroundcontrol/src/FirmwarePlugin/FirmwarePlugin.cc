@@ -160,6 +160,14 @@ void FirmwarePlugin::guidedModeChangeAltitude(Vehicle*, double, bool pauseVehicl
     QGC::showAppMessage(guided_mode_not_supported_by_vehicle);
 }
 
+void FirmwarePlugin::guidedModeStandoff(Vehicle *vehicle, const QGeoCoordinate &standoffCoord, double amslAltitude, double headingRadians) const
+{
+    // STRATUM: generic fallback - position only (no combined altitude/heading control).
+    Q_UNUSED(amslAltitude);
+    Q_UNUSED(headingRadians);
+    (void) guidedModeGotoLocation(vehicle, standoffCoord, 0.0);
+}
+
 void FirmwarePlugin::guidedModeChangeGroundSpeedMetersSecond(Vehicle*, double) const
 {
     QGC::showAppMessage(guided_mode_not_supported_by_vehicle);

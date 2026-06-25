@@ -11,6 +11,10 @@ ToolStrip {
     // Takeoff / Return / Land present as discrete command buttons.
     accentButtons: true
 
+    // STRATUM: a little wider than the default strip so two-word command labels
+    // ("Define AOP", "Max Speed") read comfortably.
+    width: ScreenTools.defaultFontPixelWidth * 9
+
     signal displayPreFlightChecklist
     signal defineAOP
 

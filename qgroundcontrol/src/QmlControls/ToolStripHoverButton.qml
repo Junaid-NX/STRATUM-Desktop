@@ -31,7 +31,10 @@ Button {
     // discrete command buttons rather than transparent icon affordances.
     property bool accentButtons:     false
 
-    property color _currentContentColor:  (checked || pressed) ? qgcPal.buttonHighlightText : qgcPal.text
+    // STRATUM: on accent (olive) buttons the fill is light enough that dark text/icons
+    // read far better than white in every state (idle, hover, checked).
+    property color _currentContentColor:  accentButtons ? "#1A1A1A" :
+                                              ((checked || pressed) ? qgcPal.buttonHighlightText : qgcPal.text)
     property color _currentContentColorSecondary:  (checked || pressed) ? qgcPal.text : qgcPal.buttonHighlight
 
     signal dropped(int index)
@@ -115,6 +118,14 @@ Button {
                 id:                         innerText
                 text:                       control.text
                 color:                      _currentContentColor
+                // STRATUM: wrap to two lines and centre so multi-word command labels
+                // (e.g. "Define AOP", "Max Speed") fit inside the square button rather
+                // than truncating.
+                width:                      contentLayoutItem.width
+                horizontalAlignment:        Text.AlignHCenter
+                wrapMode:                   Text.WordWrap
+                maximumLineCount:           2
+                elide:                      Text.ElideRight
                 anchors.horizontalCenter:   parent.horizontalCenter
                 font.bold:                  !innerImage.visible && !innerImageColorful.visible
                 opacity:                    !innerImage.visible ? 0.8 : 1.0

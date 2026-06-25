@@ -696,6 +696,20 @@ FlightMap {
         guidedController:   globals.guidedControllerFlyView
     }
 
+    // STRATUM: standoff surveillance area. Crimson circle centred on the target,
+    // radius = standoff distance, depicting the area under surveillance. Shown
+    // whenever a standoff hold / orbit is active.
+    MapCircle {
+        id:             standoffSurveillanceCircle
+        center:         standoffController._targetCoordinate
+        radius:         Math.max(standoffController._standoffDistance, 1)
+        color:          Qt.rgba(0.82, 0.10, 0.21, 0.15)  // crimson fill, low opacity
+        border.color:   "#D11A35"                        // crimson outline
+        border.width:   2
+        visible:        standoffController._standoffActive
+        z:              QGroundControl.zOrderMapItems
+    }
+
     QGCPopupDialogFactory {
         id: roiEditPositionDialogFactory
 

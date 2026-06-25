@@ -300,6 +300,16 @@ public:
     /// @return true: goto command accepted, false: goto failed
     Q_INVOKABLE bool guidedModeGotoLocation(const QGeoCoordinate& gotoCoord, double forwardFlightLoiterRadius = 0.0f);
 
+    /// STRATUM: Command a standoff hold in a SINGLE reposition - position, altitude and
+    /// heading dispatched together. Sending goto + change-altitude + change-heading
+    /// separately collides on PX4 (all three are MAV_CMD_DO_REPOSITION) and trips the
+    /// duplicate-command guard, so heading/altitude were silently dropped.
+    ///     @param standoffCoord  Standoff point (lat/lon)
+    ///     @param amslAltitude   Target AMSL altitude (NaN = keep current)
+    ///     @param headingDegrees Absolute heading the vehicle should hold at the point (NaN = no change)
+    /// @return true: command dispatched, false: rejected
+    Q_INVOKABLE bool guidedModeStandoff(const QGeoCoordinate& standoffCoord, double amslAltitude, double headingDegrees);
+
     /// Command vehicle to change altitude
     ///     @param altitudeChange If > 0, go up by amount specified, if < 0, go down by amount specified
     ///     @param pauseVehicle true: pause vehicle prior to altitude change

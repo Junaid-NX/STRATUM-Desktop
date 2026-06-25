@@ -231,6 +231,12 @@ public:
     /// @return true: goto command accepted, false: goto failed (vehicle not moved)
     virtual bool guidedModeGotoLocation(Vehicle *vehicle, const QGeoCoordinate &gotoCoord, double forwardFlightLoiterRadius = 0.0) const;
 
+    /// STRATUM: Command a standoff hold as a single reposition (position + altitude + heading).
+    ///     @param standoffCoord  Standoff point (lat/lon)
+    ///     @param amslAltitude   Target AMSL altitude (NaN = keep current)
+    ///     @param headingRadians Absolute heading to hold at the point (NaN = no change)
+    virtual void guidedModeStandoff(Vehicle *vehicle, const QGeoCoordinate &standoffCoord, double amslAltitude, double headingRadians) const;
+
     /// Command vehicle to change altitude
     ///     @param altitudeChange If > 0, go up by amount specified, if < 0, go down by amount specified
     ///     @param pauseVehicle true: pause vehicle prior to altitude change

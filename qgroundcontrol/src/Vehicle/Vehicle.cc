@@ -1908,6 +1908,25 @@ bool Vehicle::guidedModeGotoLocation(const QGeoCoordinate& gotoCoord, double for
     return _firmwarePlugin->guidedModeGotoLocation(this, gotoCoord, forwardFlightLoiterRadius);
 }
 
+bool Vehicle::guidedModeStandoff(const QGeoCoordinate& standoffCoord, double amslAltitude, double headingDegrees)
+{
+    if (!_vehicleSupports->guidedMode()) {
+        QGC::showAppMessage(guided_mode_not_supported_by_vehicle);
+        return false;
+    }
+    if (!coordinate().isValid() || !standoffCoord.isValid()) {
+        return false;
+    }
+    double maxDistance = SettingsManager::instance()->flyViewSettings()->maxGoToLocationDistance()->rawValue().toDouble();
+    if (coordinate().distanceTo(standoffCoord) > maxDistance) {
+        QGC::showAppMessage(QString("Standoff point is too far. Must be less than %1 %2.").arg(qRound(FactMetaData::metersToAppSettingsHorizontalDistanceUnits(maxDistance).toDouble())).arg(FactMetaData::appSettingsHorizontalDistanceUnitsString()));
+        return false;
+    }
+    const double headingRadians = qIsNaN(headingDegrees) ? qQNaN() : qDegreesToRadians(headingDegrees);
+    _firmwarePlugin->guidedModeStandoff(this, standoffCoord, amslAltitude, headingRadians);
+    return true;
+}
+
 void Vehicle::guidedModeChangeAltitude(double altitudeChange, bool pauseVehicle)
 {
     if (!_vehicleSupports->guidedMode()) {

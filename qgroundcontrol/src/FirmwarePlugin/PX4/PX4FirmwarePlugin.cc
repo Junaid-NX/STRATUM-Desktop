@@ -405,6 +405,43 @@ bool PX4FirmwarePlugin::guidedModeGotoLocation(Vehicle* vehicle, const QGeoCoord
     return true;
 }
 
+void PX4FirmwarePlugin::guidedModeStandoff(Vehicle* vehicle, const QGeoCoordinate& standoffCoord, double amslAltitude, double headingRadians) const
+{
+    // STRATUM: single MAV_CMD_DO_REPOSITION carrying position + altitude + yaw together.
+    // Issuing goto, change-altitude and change-heading separately would send three
+    // DO_REPOSITION commands back-to-back; PX4 rejects the trailing ones as duplicates
+    // ("Waiting on previous response to same command"), so only the move survived.
+    if (qIsNaN(amslAltitude)) {
+        amslAltitude = vehicle->altitudeAMSL()->rawValue().toDouble();
+    }
+    const float yaw = qIsNaN(headingRadians) ? NAN : static_cast<float>(headingRadians);
+
+    if (vehicle->capabilityBits() & MAV_PROTOCOL_CAPABILITY_COMMAND_INT) {
+        vehicle->sendMavCommandInt(vehicle->defaultComponentId(),
+                                   MAV_CMD_DO_REPOSITION,
+                                   MAV_FRAME_GLOBAL,
+                                   true,   // show error if fails
+                                   -1.0f,
+                                   MAV_DO_REPOSITION_FLAGS_CHANGE_MODE,
+                                   0.0f,
+                                   yaw,
+                                   standoffCoord.latitude(),
+                                   standoffCoord.longitude(),
+                                   static_cast<float>(amslAltitude));
+    } else {
+        vehicle->sendMavCommand(vehicle->defaultComponentId(),
+                                MAV_CMD_DO_REPOSITION,
+                                true,   // show error if fails
+                                -1.0f,
+                                MAV_DO_REPOSITION_FLAGS_CHANGE_MODE,
+                                0.0f,
+                                yaw,
+                                static_cast<float>(standoffCoord.latitude()),
+                                static_cast<float>(standoffCoord.longitude()),
+                                static_cast<float>(amslAltitude));
+    }
+}
+
 typedef struct {
     PX4FirmwarePlugin*  plugin;
     Vehicle*            vehicle;
