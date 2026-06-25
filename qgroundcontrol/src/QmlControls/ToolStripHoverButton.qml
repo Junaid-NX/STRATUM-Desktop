@@ -120,8 +120,10 @@ Button {
                 color:                      _currentContentColor
                 // STRATUM: wrap to two lines and centre so multi-word command labels
                 // (e.g. "Define AOP", "Max Speed") fit inside the square button rather
-                // than truncating.
-                width:                      contentLayoutItem.width
+                // than truncating. Bind to the externally-anchored button width (minus a
+                // constant inset) rather than contentLayoutItem.width, which would form a
+                // binding loop via contentMargins -> label height -> label width.
+                width:                      control.width - ScreenTools.defaultFontPixelWidth
                 horizontalAlignment:        Text.AlignHCenter
                 wrapMode:                   Text.WordWrap
                 maximumLineCount:           2

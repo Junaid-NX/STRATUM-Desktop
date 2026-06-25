@@ -65,7 +65,9 @@ Item {
 
     // Current AMSL altitude for the standoff/orbit (NaN if home altitude unknown).
     function _standoffAmslAltitude() {
-        if (!_activeVehicle || !_activeVehicle.homePosition.isValid() || isNaN(_activeVehicle.homePosition.altitude)) {
+        // NOTE: on a QML QGeoCoordinate, isValid is a PROPERTY (no parens); calling it
+        // as a function throws and aborts the whole standoff command.
+        if (!_activeVehicle || !_activeVehicle.homePosition.isValid || isNaN(_activeVehicle.homePosition.altitude)) {
             return NaN
         }
         return _activeVehicle.homePosition.altitude + _standoffHeight
