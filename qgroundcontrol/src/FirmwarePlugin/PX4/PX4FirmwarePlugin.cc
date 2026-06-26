@@ -43,6 +43,7 @@ PX4FirmwarePlugin::PX4FirmwarePlugin()
     const QString simpleFlightModeName = tr("Simple");
     const QString orbitFlightModeName = tr("Orbit");
     const QString standoffFlightModeName = tr("Standoff");
+    const QString engagementFlightModeName = tr("Engagement");
 
     _setModeEnumToModeStringMapping({
         { PX4CustomMode::MANUAL,        manualFlightModeName      },
@@ -63,6 +64,7 @@ PX4FirmwarePlugin::PX4FirmwarePlugin()
         { PX4CustomMode::AUTO_RTGS,     rtgsFlightModeName        },
         { PX4CustomMode::AUTO_TAKEOFF,  takeoffFlightModeName     },
         { PX4CustomMode::AUTO_STANDOFF, standoffFlightModeName    },
+        { PX4CustomMode::AUTO_ENGAGEMENT, engagementFlightModeName },
     });
 
     static FlightModeList availableFlightModes = {
@@ -85,6 +87,7 @@ PX4FirmwarePlugin::PX4FirmwarePlugin()
         { rtgsFlightModeName,       PX4CustomMode::AUTO_RTGS,       false,  false},
         { takeoffFlightModeName,    PX4CustomMode::AUTO_TAKEOFF,    false,  false},
         { standoffFlightModeName,   PX4CustomMode::AUTO_STANDOFF,   true,   true },
+        { engagementFlightModeName, PX4CustomMode::AUTO_ENGAGEMENT, true,   true },
     };
 
     updateAvailableFlightModes(availableFlightModes);

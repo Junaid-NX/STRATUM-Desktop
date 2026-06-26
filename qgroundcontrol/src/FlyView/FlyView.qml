@@ -233,6 +233,41 @@ Item {
             }
         }
 
+        // STRATUM: blinking ENGAGING! overlay. Shown whenever the vehicle is in the
+        // PX4 custom "Engagement" flight mode, triggered from the left-strip Engage
+        // button. Anchored to the top-centre of the flight view (below the toolbar),
+        // sits above all map widgets so it cannot be missed.
+        Rectangle {
+            id:                         engagingOverlay
+            anchors.horizontalCenter:   parent.horizontalCenter
+            anchors.top:                parent.top
+            anchors.topMargin:          toolbar.height + (_toolsMargin * 3)
+            width:                       engagingLabel.contentWidth + (_toolsMargin * 6)
+            height:                      engagingLabel.contentHeight + (_toolsMargin * 3)
+            radius:                      ScreenTools.defaultBorderRadius
+            color:                       "#cc0000"
+            border.color:                "white"
+            border.width:                2
+            z:                           QGroundControl.zOrderTopMost
+            visible:                     _activeVehicle && _activeVehicle.flightMode === qsTr("Engagement")
+
+            QGCLabel {
+                id:                 engagingLabel
+                anchors.centerIn:   parent
+                text:               qsTr("ENGAGING!")
+                color:              "white"
+                font.bold:          true
+                font.pointSize:     ScreenTools.largeFontPointSize
+            }
+
+            SequentialAnimation on opacity {
+                running:    engagingOverlay.visible
+                loops:      Animation.Infinite
+                NumberAnimation { from: 1.0; to: 0.25; duration: 450 }
+                NumberAnimation { from: 0.25; to: 1.0; duration: 450 }
+            }
+        }
+
         Loader {
             id:           viewer3DLoader
             z:            1
