@@ -1,9 +1,10 @@
 import QGroundControl
 import QGroundControl.FlyView
 
-// STRATUM: Safe Recovery. Operator-facing label for the vehicle's Return (RTL) FLIGHT
-// MODE; commands it directly (the same path the toolbar mode menu used), routed through
-// the hold-to-confirm bar.
+// STRATUM: Safe Recovery. PX4's StandardModes advertises the RTL-class mode with the
+// literal name "Safe Recovery" (MAV_STANDARD_MODE_SAFE_RECOVERY, see StandardModes.cc),
+// so we command that exact name rather than vehicle.rtlFlightMode()/"Return", which is
+// empty/unmatched under the dynamic AVAILABLE_MODES protocol. Same name the mode menu uses.
 GuidedToolStripAction {
     property var _vehicle: QGroundControl.multiVehicleManager.activeVehicle
 
@@ -12,5 +13,5 @@ GuidedToolStripAction {
     visible:    true
     enabled:    !!_vehicle
     actionID:   _guidedController.actionSetFlightMode
-    actionData: _vehicle ? _vehicle.rtlFlightMode : qsTr("Return")
+    actionData: qsTr("Safe Recovery")
 }

@@ -1,8 +1,8 @@
 import QGroundControl
 import QGroundControl.FlyView
 
-// STRATUM: Land. Commands the vehicle's Land FLIGHT MODE directly (the same path the
-// toolbar mode menu used), routed through the hold-to-confirm bar.
+// STRATUM: Land. Commands the vehicle's Land FLIGHT MODE directly via its literal
+// advertised name (see GuidedActionHold for why we avoid landFlightMode()).
 GuidedToolStripAction {
     property var _vehicle: QGroundControl.multiVehicleManager.activeVehicle
 
@@ -11,5 +11,5 @@ GuidedToolStripAction {
     visible:    true
     enabled:    !!_vehicle
     actionID:   _guidedController.actionSetFlightMode
-    actionData: _vehicle ? _vehicle.landFlightMode : qsTr("Land")
+    actionData: qsTr("Land")
 }
