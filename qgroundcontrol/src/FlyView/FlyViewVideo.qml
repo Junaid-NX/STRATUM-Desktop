@@ -133,4 +133,13 @@ Item {
         id: obstacleDistance
         showText: pipState.state === pipState.fullState
     }
+
+    //-- STRATUM flight-parameter OSD. Drawn on top of the video only.
+    //   enabled:false inside the control lets gimbal/tracking input pass through.
+    FlyViewVideoOSD {
+        id:         flightParamOSD
+        anchors.fill: parent
+        compact:    _root.pipState.state !== _root.pipState.fullState
+        visible:    videoStreaming.visible
+    }
 }
