@@ -1,27 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- STRATUM: standoff hold-point marker. Inverted teardrop pin whose tip anchors on
-     the standoff coordinate; crimson body matches the surveillance circle theme. The
-     head carries an observation crosshair / target glyph for tactical legibility. -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 62" width="48" height="62">
+<!-- STRATUM: target marker. A minimal crimson reticle whose centre anchors exactly on
+     the target coordinate (the centre of the surveillance circle). Despite the file
+     name, this marks the TARGET the operator designated, not the vehicle's standoff
+     hold-point. Square viewBox so the geometric centre (24,24) is the anchor. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
   <defs>
-    <filter id="ds" x="-30%" y="-30%" width="160%" height="160%">
-      <feDropShadow dx="0" dy="1.2" stdDeviation="1.2" flood-color="#000000" flood-opacity="0.45"/>
+    <filter id="ds" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="0.6" stdDeviation="1.1" flood-color="#000000" flood-opacity="0.55"/>
     </filter>
   </defs>
 
-  <!-- Pin body: rounded head blending to a point at bottom-center (24,60). -->
-  <path d="M24 60
-           C 18 46, 7 39, 7 22
-           A 17 17 0 1 1 41 22
-           C 41 39, 30 46, 24 60 Z"
-        fill="#2A2A2E" stroke="#D11A35" stroke-width="2.6"
-        stroke-linejoin="round" filter="url(#ds)"/>
+  <g filter="url(#ds)">
+    <!-- Dark halo ring for legibility over bright or busy imagery. -->
+    <circle cx="24" cy="24" r="13" fill="none" stroke="#1C1C1F" stroke-width="5"/>
+    <!-- Crimson reticle ring. -->
+    <circle cx="24" cy="24" r="13" fill="none" stroke="#D11A35" stroke-width="2.6"/>
 
-  <!-- Observation crosshair / target glyph centred in the head (24,22). -->
-  <circle cx="24" cy="22" r="9.5" fill="none" stroke="#FFFFFF" stroke-width="2"/>
-  <circle cx="24" cy="22" r="2.6" fill="#D11A35"/>
-  <line x1="24" y1="8.5"  x2="24" y2="14.5" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
-  <line x1="24" y1="29.5" x2="24" y2="35.5" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
-  <line x1="10.5" y1="22" x2="16.5" y2="22" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
-  <line x1="31.5" y1="22" x2="37.5" y2="22" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+    <!-- Four crosshair ticks crossing the ring (dark backing + crimson). -->
+    <g stroke-linecap="round">
+      <g stroke="#1C1C1F" stroke-width="5">
+        <line x1="24" y1="4"  x2="24" y2="15"/>
+        <line x1="24" y1="33" x2="24" y2="44"/>
+        <line x1="4"  y1="24" x2="15" y2="24"/>
+        <line x1="33" y1="24" x2="44" y2="24"/>
+      </g>
+      <g stroke="#D11A35" stroke-width="2.6">
+        <line x1="24" y1="4"  x2="24" y2="15"/>
+        <line x1="24" y1="33" x2="24" y2="44"/>
+        <line x1="4"  y1="24" x2="15" y2="24"/>
+        <line x1="33" y1="24" x2="44" y2="24"/>
+      </g>
+    </g>
+
+    <!-- Centre dot pinned on the target coordinate. -->
+    <circle cx="24" cy="24" r="3" fill="#FFFFFF"/>
+    <circle cx="24" cy="24" r="1.7" fill="#D11A35"/>
+  </g>
 </svg>

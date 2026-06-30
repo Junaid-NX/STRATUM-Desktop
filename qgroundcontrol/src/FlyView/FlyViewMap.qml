@@ -784,24 +784,26 @@ FlightMap {
         z:              QGroundControl.zOrderMapItems
     }
 
-    // STRATUM: standoff hold-point marker. A crimson tactical pin dropped on the
-    // computed standoff point (the target offset by the standoff distance along the
-    // standoff bearing). The pin's TIP anchors exactly on the coordinate. The icon
-    // scales with map zoom inside fixed bounds, so it grows as the operator zooms in
-    // and shrinks zooming out without ever becoming a speck or swamping the view.
+    // STRATUM: target marker. A minimal crimson reticle dropped on the operator's
+    // designated target (the centre of the surveillance circle), NOT the vehicle's
+    // standoff hold-point. "Standoff here" on the map menu is a deliberate misnomer:
+    // the operator clicks the target, and the standoff distance is how far the vehicle
+    // holds off from it. The reticle's CENTRE anchors exactly on the coordinate. The
+    // icon scales with map zoom inside fixed bounds, so it grows as the operator zooms
+    // in and shrinks zooming out without ever becoming a speck or swamping the view.
     // Shown whenever a standoff hold / orbit is active.
     MapQuickItem {
         id:             standoffPointMarker
-        coordinate:     standoffController._standoffPoint
-        visible:        standoffController._standoffActive && standoffController._standoffPoint.isValid
+        coordinate:     standoffController._targetCoordinate
+        visible:        standoffController._standoffActive && standoffController._targetCoordinate.isValid
         anchorPoint.x:  standoffPin.width  / 2
-        anchorPoint.y:  standoffPin.height * (60 / 62)   // SVG tip sits at y=60 in a 62-tall viewBox
+        anchorPoint.y:  standoffPin.height / 2   // square SVG: geometric centre anchors on target
         z:              QGroundControl.zOrderMapItems + 1
 
         // Bounded zoom scaling: ~1.25x per zoom level, clamped to [0.7, 1.9].
         // zoomLevel 16 maps to 1.0x.
         property real _zoomScale: Math.max(0.7, Math.min(1.9, Math.pow(1.25, _root.zoomLevel - 16)))
-        property real _iconSize:  ScreenTools.defaultFontPixelHeight * 3.2 * _zoomScale
+        property real _iconSize:  ScreenTools.defaultFontPixelHeight * 2.0 * _zoomScale
 
         sourceItem: Item {
             width:  standoffPin.width
@@ -811,7 +813,7 @@ FlightMap {
                 id:                 standoffPin
                 source:             "/qmlimages/StandoffMarker.svg"
                 width:              standoffPointMarker._iconSize
-                height:             standoffPointMarker._iconSize * (62 / 48)
+                height:             standoffPointMarker._iconSize   // square icon (48x48 viewBox)
                 sourceSize.width:   standoffPointMarker._iconSize * 2   // crisp on hi-DPI displays
                 fillMode:           Image.PreserveAspectFit
                 mipmap:             true
@@ -822,7 +824,7 @@ FlightMap {
                 anchors.topMargin:          ScreenTools.defaultFontPixelHeight * 0.15
                 anchors.horizontalCenter:   standoffPin.horizontalCenter
                 map:                        _root
-                text:                       qsTr("Standoff")
+                text:                       qsTr("Target")
                 font.pointSize:             ScreenTools.smallFontPointSize
             }
         }
