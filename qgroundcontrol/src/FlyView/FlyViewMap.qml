@@ -784,6 +784,50 @@ FlightMap {
         z:              QGroundControl.zOrderMapItems
     }
 
+    // STRATUM: standoff hold-point marker. A crimson tactical pin dropped on the
+    // computed standoff point (the target offset by the standoff distance along the
+    // standoff bearing). The pin's TIP anchors exactly on the coordinate. The icon
+    // scales with map zoom inside fixed bounds, so it grows as the operator zooms in
+    // and shrinks zooming out without ever becoming a speck or swamping the view.
+    // Shown whenever a standoff hold / orbit is active.
+    MapQuickItem {
+        id:             standoffPointMarker
+        coordinate:     standoffController._standoffPoint
+        visible:        standoffController._standoffActive && standoffController._standoffPoint.isValid
+        anchorPoint.x:  standoffPin.width  / 2
+        anchorPoint.y:  standoffPin.height * (60 / 62)   // SVG tip sits at y=60 in a 62-tall viewBox
+        z:              QGroundControl.zOrderMapItems + 1
+
+        // Bounded zoom scaling: ~1.25x per zoom level, clamped to [0.7, 1.9].
+        // zoomLevel 16 maps to 1.0x.
+        property real _zoomScale: Math.max(0.7, Math.min(1.9, Math.pow(1.25, _root.zoomLevel - 16)))
+        property real _iconSize:  ScreenTools.defaultFontPixelHeight * 3.2 * _zoomScale
+
+        sourceItem: Item {
+            width:  standoffPin.width
+            height: standoffPin.height
+
+            Image {
+                id:                 standoffPin
+                source:             "/qmlimages/StandoffMarker.svg"
+                width:              standoffPointMarker._iconSize
+                height:             standoffPointMarker._iconSize * (62 / 48)
+                sourceSize.width:   standoffPointMarker._iconSize * 2   // crisp on hi-DPI displays
+                fillMode:           Image.PreserveAspectFit
+                mipmap:             true
+            }
+
+            QGCMapLabel {
+                anchors.top:                standoffPin.bottom
+                anchors.topMargin:          ScreenTools.defaultFontPixelHeight * 0.15
+                anchors.horizontalCenter:   standoffPin.horizontalCenter
+                map:                        _root
+                text:                       qsTr("Standoff")
+                font.pointSize:             ScreenTools.smallFontPointSize
+            }
+        }
+    }
+
     QGCPopupDialogFactory {
         id: roiEditPositionDialogFactory
 
