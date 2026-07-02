@@ -108,10 +108,15 @@ jobs:
           source-dir: qgroundcontrol
           build-dir: build
 
+      - name: Compute safe artifact suffix
+        id: names
+        shell: bash
+        run: echo "safe_ref=${GITHUB_REF_NAME//\//-}" >> "$GITHUB_OUTPUT"
+
       - name: Upload bare executable
         uses: actions/upload-artifact@v4
         with:
-          name: STRATUM-exe-${{ github.ref_name }}-${{ github.run_number }}
+          name: STRATUM-exe-${{ steps.names.outputs.safe_ref }}-${{ github.run_number }}
           path: ${{ steps.package.outputs.exe-path }}
           if-no-files-found: error
           retention-days: 7
@@ -119,7 +124,7 @@ jobs:
       - name: Upload NSIS installer
         uses: actions/upload-artifact@v4
         with:
-          name: STRATUM-installer-nsis-${{ github.ref_name }}-${{ github.run_number }}
+          name: STRATUM-installer-nsis-${{ steps.names.outputs.safe_ref }}-${{ github.run_number }}
           path: ${{ steps.package.outputs.nsis-path }}
           if-no-files-found: error
           retention-days: 7
@@ -127,7 +132,7 @@ jobs:
       - name: Upload MSI installer
         uses: actions/upload-artifact@v4
         with:
-          name: STRATUM-installer-msi-${{ github.ref_name }}-${{ github.run_number }}
+          name: STRATUM-installer-msi-${{ steps.names.outputs.safe_ref }}-${{ github.run_number }}
           path: ${{ steps.package.outputs.msi-path }}
           if-no-files-found: error
           retention-days: 7
