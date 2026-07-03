@@ -15,6 +15,9 @@ Button {
     checkable:          false
 
     property bool logo: false
+    // STRATUM: when set to an opaque colour, the logo SVG is tinted (monochrome) with it
+    // instead of rendering its native multi-colour form. Transparent = native (default).
+    property color logoColor: "#00000000"
 
     property real _horizontalMargin: ScreenTools.defaultFontPixelWidth
 
@@ -33,19 +36,19 @@ Button {
         // Logo buttons render the multi-color SVG natively via VectorImage; non-logo buttons
         // tint their monochrome icon through QGCColoredImage. Plain `Row` skips visible:false items.
         QGCVectorImage {
-            visible:                button.logo
+            visible:                button.logo && button.logoColor.a === 0
             height:                 ScreenTools.defaultFontPixelHeight * 2
             width:                  height
             source:                 visible ? button.icon.source : ""
             anchors.verticalCenter: parent.verticalCenter
         }
         QGCColoredImage {
-            visible:                !button.logo
+            visible:                !button.logo || button.logoColor.a > 0
             height:                 ScreenTools.defaultFontPixelHeight * 2
             width:                  height
             sourceSize.height:      parent.height
             fillMode:               Image.PreserveAspectFit
-            color:                  button.checked ? qgcPal.buttonHighlightText : qgcPal.buttonText
+            color:                  button.logo ? button.logoColor : (button.checked ? qgcPal.buttonHighlightText : qgcPal.buttonText)
             source:                 visible ? button.icon.source : ""
             anchors.verticalCenter: parent.verticalCenter
         }

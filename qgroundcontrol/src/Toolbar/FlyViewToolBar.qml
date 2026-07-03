@@ -14,6 +14,12 @@ Item {
     width:  parent.width
     height: ScreenTools.toolbarHeight
 
+    // STRATUM: the standoff / AOP entry commands now live in the centre of this ribbon
+    // (moved off the left command strip). The handlers are wired in FlyView.qml, which
+    // owns the widget layer that hosts the standoff panel and the AOP map editor.
+    signal defineAOP()
+    signal setStandoff()
+
     property var    _activeVehicle:     QGroundControl.multiVehicleManager.activeVehicle
     property bool   _communicationLost: _activeVehicle ? _activeVehicle.vehicleLinkManager.communicationLost : false
     property real   _leftRightMargin:   ScreenTools.defaultFontPixelWidth * 0.75
@@ -26,24 +32,25 @@ Item {
     readonly property string _holdModeName:       _activeVehicle ? _activeVehicle.pauseFlightMode : qsTr("Hold")
     property color _ribbonColor: {
         if (!_activeVehicle) {
-            return qgcPal.brandingPurple
+            return "#6B7280"                    // disconnected / no vehicle
         }
         if (_communicationLost) {
-            return "#D32F2F"
+            return "#6B7280"                    // disconnected
         }
         var mode = _activeVehicle.flightMode
         if (mode === _abortModeName) {
-            return "#FF8F00"
+            return "#F59E0B"                    // abort
         }
         if (mode === _engagementModeName) {
-            return "#D32F2F"
+            return "#DC2626"                    // engagement
         }
         if (mode === qsTr("Standoff") || mode === qsTr("Takeoff") || mode === _holdModeName || _activeVehicle.flying) {
-            return "#43A047"
+            return "#22C55E"                    // normal operations
         }
-        return "#1E88E5"
+        return "#1E88E5"                        // connected, on the ground / ready
     }
-    readonly property color _ribbonTextColor: "#FFFFFF"
+    // STRATUM: all ribbon content (logo, status text, mode, telemetry) renders black.
+    readonly property color _ribbonTextColor: "#000000"
 
     function dropMainStatusIndicatorTool() {
         mainStatusIndicator.dropMainStatusIndicator();
@@ -85,9 +92,11 @@ Item {
                             id:                 qgcButton
                             objectName:         "toolbar_qgcLogo"
                             Layout.fillHeight:  true
-                            // STRATUM: NEXAM (NX) company mark on the left.
+                            // STRATUM: NEXAM (NX) company mark on the left, tinted black to
+                            // match the rest of the ribbon content.
                             icon.source:        "/res/NXLogo.svg"
                             logo:               true
+                            logoColor:          _ribbonTextColor
                             onClicked:          mainWindow.showToolSelectDialog()
                         }
 
@@ -110,15 +119,31 @@ Item {
                         objectName:         "toolbar_flightModeIndicator"
                         Layout.fillHeight:  true
                         visible:            _activeVehicle
+                        ribbonTextColor:    _ribbonTextColor
                     }
                 }
             }
             Item {
                 id:     centerPanel
-                // STRATUM: the guided-action confirm bar was relocated to the bottom edge
-                // (see FlyView.qml). The center panel now simply spans the remaining width.
+                // STRATUM: centre of the ribbon carries the Define AOP and Set Standoff
+                // command buttons (relocated from the left command strip).
                 width:  Math.max(0, control.width - (leftPanel.width + rightPanel.width))
                 height: parent.height
+
+                Row {
+                    anchors.centerIn:   parent
+                    spacing:            ScreenTools.defaultFontPixelWidth
+
+                    QGCButton {
+                        text:       qsTr("Define AOP")
+                        onClicked:  control.defineAOP()
+                    }
+
+                    QGCButton {
+                        text:       qsTr("Set Standoff")
+                        onClicked:  control.setStandoff()
+                    }
+                }
             }
 
             Item {

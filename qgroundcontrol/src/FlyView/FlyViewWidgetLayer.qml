@@ -37,6 +37,17 @@ Item {
     property bool   _layoutSpacing:         ScreenTools.defaultFontPixelWidth
     property bool   _showSingleVehicleUI:   true
 
+    // STRATUM: AOP edit + standoff-entry actions were relocated to the top ribbon
+    // (FlyViewToolBar). These functions keep the logic here (where the standoff panel
+    // and the AOP map editor live) and are invoked from FlyView.qml's ribbon wiring.
+    function startAOP() {
+        standoffPanel.close()
+        mapControl.startAOPEdit()
+    }
+    function toggleStandoff() {
+        standoffPanel.toggle()
+    }
+
     QGCPalette { id: qgcPal; colorGroupEnabled: true }
 
     // STRATUM: AOP edit-mode action bar. Shown only while defining the Area of
@@ -232,13 +243,10 @@ Item {
         // STRATUM: enter Area-Of-Operations edit mode on the single Fly map. The
         // standoff panel is closed first so its crosshair pick mode and the AOP
         // polygon editor never contend for the same map clicks.
-        onDefineAOP: {
-            standoffPanel.close()
-            mapControl.startAOPEdit()
-        }
+        onDefineAOP:  startAOP()
 
         // STRATUM: toggle the standoff entry panel beside the strip.
-        onSetStandoff: standoffPanel.toggle()
+        onSetStandoff: toggleStandoff()
 
         property real topEdgeLeftInset:     visible ? y + height : 0
         property real leftEdgeTopInset:     visible ? x + width : 0

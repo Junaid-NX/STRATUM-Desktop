@@ -33,12 +33,12 @@ MapQuickItem {
     // -> red, flying / takeoff / hold / standoff -> green, on the ground -> blue. ADSB
     // traffic is never tinted.
     property color  _stateTintColor:    (_adsbVehicle || !vehicle) ? "transparent" :
-                                            vehicle.flightMode === qsTr("Abort") ? "#FF8F00" :
-                                            vehicle.flightMode === qsTr("Engagement") ? "#D32F2F" :
+                                            vehicle.flightMode === qsTr("Abort") ? "#F59E0B" :
+                                            vehicle.flightMode === qsTr("Engagement") ? "#DC2626" :
                                             (vehicle.flightMode === qsTr("Standoff") ||
                                              vehicle.flightMode === qsTr("Takeoff") ||
                                              vehicle.flightMode === vehicle.pauseFlightMode ||
-                                             vehicle.flying) ? "#43A047" : "#1E88E5"
+                                             vehicle.flying) ? "#22C55E" : "#1E88E5"
     property bool   _stateTintActive:   !_adsbVehicle && !!vehicle
 
     sourceItem: Item {

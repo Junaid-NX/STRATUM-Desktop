@@ -13,6 +13,7 @@ qt_add_qml_module(FlyViewModule
         CustomGuidedActionsController.qml
         DefaultChecklist.qml
         EngageAction.qml
+        EngageDialog.qml
         EngagementAbortOverlay.qml
         EngagementController.qml
         EngagementCountdown.qml
@@ -57,6 +58,7 @@ qt_add_qml_module(FlyViewModule
         GuidedActionLand.qml
         GuidedActionPause.qml
         GuidedActionRTL.qml
+        GuidedActionStandoffMode.qml
         GuidedActionsController.qml
         GuidedActionTakeoff.qml
         GuidedActionTakeoffDialog.qml

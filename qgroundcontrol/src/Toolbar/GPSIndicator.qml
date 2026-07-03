@@ -20,8 +20,8 @@ Item {
     property var    _gps:           _activeVehicle ? _activeVehicle.gps : null
     property real   _hAccM:         _gps ? _gps.horizontalAccuracy.value : NaN
     property real   _vAccM:         _gps ? _gps.verticalAccuracy.value   : NaN
-    property string _hAccText:      (_gps && !isNaN(_hAccM)) ? (Math.round(_hAccM * 100) + " " + qsTr("cm")) : qsTr("--")
-    property string _vAccText:      (_gps && !isNaN(_vAccM)) ? (Math.round(_vAccM * 100) + " " + qsTr("cm")) : qsTr("--")
+    property string _hAccText:      (_gps && !isNaN(_hAccM)) ? (_hAccM.toFixed(2) + " " + qsTr("m")) : qsTr("--")
+    property string _vAccText:      (_gps && !isNaN(_vAccM)) ? (_vAccM.toFixed(2) + " " + qsTr("m")) : qsTr("--")
     property string _nSatText:      _gps ? _gps.count.valueString : qsTr("--")
 
     QGCPalette { id: qgcPal }
@@ -55,7 +55,7 @@ Item {
                 fillMode:           Image.PreserveAspectFit
                 sourceSize.height:  height
                 opacity:            (_activeVehicle && _activeVehicle.gps.count.value >= 0) ? 1 : 0.5
-                color:              qgcPal.text
+                color:              "#000000"
             }
         }
 
@@ -69,36 +69,36 @@ Item {
 
             QGCLabel {
                 text:               qsTr("HAcc")
-                color:              qgcPal.text
+                color:              "#000000"
                 font.pointSize:     ScreenTools.smallFontPointSize
             }
             QGCLabel {
                 text:               _hAccText
-                color:              qgcPal.text
+                color:              "#000000"
                 font.pointSize:     ScreenTools.smallFontPointSize
                 Layout.alignment:   Qt.AlignRight
             }
 
             QGCLabel {
                 text:               qsTr("VAcc")
-                color:              qgcPal.text
+                color:              "#000000"
                 font.pointSize:     ScreenTools.smallFontPointSize
             }
             QGCLabel {
                 text:               _vAccText
-                color:              qgcPal.text
+                color:              "#000000"
                 font.pointSize:     ScreenTools.smallFontPointSize
                 Layout.alignment:   Qt.AlignRight
             }
 
             QGCLabel {
                 text:               qsTr("Nsat")
-                color:              qgcPal.text
+                color:              "#000000"
                 font.pointSize:     ScreenTools.smallFontPointSize
             }
             QGCLabel {
                 text:               _nSatText
-                color:              qgcPal.text
+                color:              "#000000"
                 font.pointSize:     ScreenTools.smallFontPointSize
                 Layout.alignment:   Qt.AlignRight
             }

@@ -290,5 +290,10 @@ Item {
         id:                 toolbar
         guidedValueSlider:  _guidedValueSlider
         visible:            !QGroundControl.videoManager.fullScreen
+
+        // STRATUM: AOP / standoff entry commands relocated to the ribbon centre; route
+        // them to the widget layer that owns the standoff panel and the AOP map editor.
+        onDefineAOP:   widgetLayer.startAOP()
+        onSetStandoff: widgetLayer.toggleStandoff()
     }
 }

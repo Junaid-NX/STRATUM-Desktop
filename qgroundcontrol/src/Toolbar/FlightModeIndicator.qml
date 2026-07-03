@@ -12,6 +12,7 @@ Item {
 
     property bool   showIndicator:          true
     property bool   waitForParameters:      false
+    property color  ribbonTextColor:        qgcPal.text   // STRATUM: black on the fly-view ribbon
 
     property real fontPointSize:    ScreenTools.largeFontPointSize
     property var  activeVehicle:    QGroundControl.multiVehicleManager.activeVehicle
@@ -35,14 +36,14 @@ Item {
             Layout.preferredHeight: ScreenTools.defaultFontPixelHeight
             fillMode:               Image.PreserveAspectFit
             mipmap:                 true
-            color:                  qgcPal.text
+            color:                  ribbonTextColor
             source:                 "/qmlimages/FlightModesComponentIcon.png"
         }
 
         QGCLabel {
             id:                 flightModeLabel
             text:               activeVehicle ? activeVehicle.flightMode : qsTr("N/A", "No data to display")
-            color:              qgcPal.text
+            color:              ribbonTextColor
             font.pointSize:     fontPointSize
 
         }
