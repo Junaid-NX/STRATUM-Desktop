@@ -6,22 +6,31 @@ import QtQuick.Dialogs
 import QGroundControl
 import QGroundControl.Controls
 
+// STRATUM dropper panel. Three sections — Drop / Load / Camera — mirroring the
+// UAV-VAS web UI dropper + camera panels one-to-one, in QGC's Stratum styling.
 Rectangle {
     id: panel
 
     property var dropperAction
 
+    readonly property color _accent:    "#3DFFA6"
+    readonly property color _accentDim:  "#1FB97D"
+    readonly property color _danger:     "#EF5350"
+    readonly property color _dangerFill: "#B71C1C"
+
+    property var _state: dropperAction ? dropperAction._dropperState : ({ selectedMode: null, selectedPayloadIdx: null, dropped: [false, false, false, false], loaded: [false, false, false, false] })
+
     width: ScreenTools.defaultFontPixelWidth * 30
     implicitHeight: contentColumn.implicitHeight + (ScreenTools.defaultFontPixelWidth * 1.5)
     color: Qt.rgba(0, 0, 0, 0.86)
     radius: ScreenTools.defaultBorderRadius
-    border.color: "#4ADE80"
+    border.color: _accent
     border.width: 1
 
     MessageDialog {
         id: unloadConfirmDialog
-        title: qsTr("Unload all payload gates?")
-        text: qsTr("This will open all gates and clear the current dropper state. Continue?")
+        title: qsTr("Open all payload gates?")
+        text: qsTr("This opens ALL servo gates. Ensure the area below the UAV is completely clear before proceeding. Continue?")
         buttons: MessageDialog.Yes | MessageDialog.No
         onAccepted: dropperAction ? dropperAction._dropperUnloadAll() : undefined
     }
@@ -30,12 +39,12 @@ Rectangle {
         id: contentColumn
         anchors.fill: parent
         anchors.margins: ScreenTools.defaultFontPixelWidth * 0.75
-        spacing: ScreenTools.defaultFontPixelWidth * 0.45
+        spacing: ScreenTools.defaultFontPixelWidth * 0.5
 
         QGCLabel {
-            text: qsTr("Payload & Camera")
+            text: qsTr("PAYLOAD & CAMERA")
             font.bold: true
-            color: "white"
+            color: panel._accent
         }
 
         QGCLabel {
@@ -45,222 +54,175 @@ Rectangle {
             Layout.fillWidth: true
         }
 
+        // ---- Section selector ------------------------------------------------
         RowLayout {
-            spacing: ScreenTools.defaultFontPixelWidth * 0.35
             Layout.fillWidth: true
-
-            QGCButton {
-                text: qsTr("Load")
-                onClicked: dropperAction ? dropperAction._showDropperSection("load") : undefined
-            }
+            spacing: ScreenTools.defaultFontPixelWidth * 0.35
 
             QGCButton {
                 text: qsTr("Drop")
+                Layout.fillWidth: true
+                primary: dropperAction && dropperAction._dropperSection === "drop"
                 onClicked: dropperAction ? dropperAction._showDropperSection("drop") : undefined
             }
-
+            QGCButton {
+                text: qsTr("Load")
+                Layout.fillWidth: true
+                primary: dropperAction && dropperAction._dropperSection === "load"
+                onClicked: dropperAction ? dropperAction._showDropperSection("load") : undefined
+            }
             QGCButton {
                 text: qsTr("Camera")
+                Layout.fillWidth: true
+                primary: dropperAction && dropperAction._dropperSection === "camera"
                 onClicked: dropperAction ? dropperAction._showDropperSection("camera") : undefined
             }
         }
 
-        Item {
-            visible: dropperAction && dropperAction._dropperSection === "load"
-            Layout.fillWidth: true
-            implicitHeight: loadColumn.implicitHeight
+        Rectangle { Layout.fillWidth: true; height: 1; color: panel._accentDim; opacity: 0.4 }
 
-            ColumnLayout {
-                id: loadColumn
-                anchors.left: parent.left
-                anchors.right: parent.right
-                spacing: ScreenTools.defaultFontPixelWidth * 0.35
-
-                QGCButton {
-                    text: dropperAction && dropperAction._dropperLoadUnlocked ? qsTr("Loading unlocked") : qsTr("Unlock load")
-                    enabled: dropperAction && !dropperAction._dropperLoadUnlocked
-                    onClicked: dropperAction ? dropperAction._dropperUnlockLoad() : undefined
-                }
-
-                QGCButton {
-                    text: qsTr("Unload all")
-                    enabled: !!dropperAction && !!dropperAction._activeVehicle
-                    onClicked: unloadConfirmDialog.open()
-                }
-
-                Flow {
-                    spacing: ScreenTools.defaultFontPixelWidth * 0.35
-                    Layout.fillWidth: true
-
-                    Repeater {
-                        model: 4
-                        delegate: QGCButton {
-                            text: dropperAction && dropperAction._dropperState.loaded[index] ? qsTr("Loaded %1").arg(index + 1) : qsTr("Load %1").arg(index + 1)
-                            enabled: dropperAction && dropperAction._dropperLoadUnlocked && dropperAction._dropperCanLoad(index) && !dropperAction._dropperState.loaded[index]
-                            onClicked: dropperAction ? dropperAction._dropperLoadPayload(index) : undefined
-                        }
-                    }
-                }
-            }
-        }
-
-        Item {
+        // ==== DROP: select PLD or BURST, then commit with DROP ================
+        ColumnLayout {
             visible: dropperAction && dropperAction._dropperSection === "drop"
             Layout.fillWidth: true
-            implicitHeight: dropColumn.implicitHeight
+            spacing: ScreenTools.defaultFontPixelWidth * 0.4
 
-            ColumnLayout {
-                id: dropColumn
-                anchors.left: parent.left
-                anchors.right: parent.right
-                spacing: ScreenTools.defaultFontPixelWidth * 0.35
+            QGCLabel {
+                text: qsTr("SELECT PAYLOAD OR BURST, THEN DROP")
+                color: "#FF9800"
+                font.pointSize: ScreenTools.smallFontPointSize
+            }
 
-                QGCButton {
-                    text: qsTr("Burst")
-                    onClicked: dropperAction ? dropperAction._dropperSendBurst() : undefined
-                }
+            GridLayout {
+                columns: 2
+                Layout.fillWidth: true
+                columnSpacing: ScreenTools.defaultFontPixelWidth * 0.4
+                rowSpacing: ScreenTools.defaultFontPixelWidth * 0.4
 
-                Flow {
-                    spacing: ScreenTools.defaultFontPixelWidth * 0.35
-                    Layout.fillWidth: true
-
-                    Repeater {
-                        model: 4
-                        delegate: QGCButton {
-                            text: qsTr("PLD %1").arg(index + 1)
-                            enabled: dropperAction && !dropperAction._dropperState.dropped[index]
-                            onClicked: dropperAction ? dropperAction._dropperSendSingle(index) : undefined
-                        }
+                Repeater {
+                    model: 4
+                    delegate: QGCButton {
+                        required property int index
+                        readonly property bool _dropped: panel._state.dropped[index]
+                        readonly property bool _selected: panel._state.selectedMode === "single" && panel._state.selectedPayloadIdx === index
+                        Layout.fillWidth: true
+                        text: _dropped ? qsTr("✓ PLD %1").arg(index + 1) : qsTr("PLD %1").arg(index + 1)
+                        enabled: dropperAction && !_dropped
+                        primary: _selected
+                        onClicked: dropperAction ? dropperAction._selectDrop("single", index) : undefined
                     }
+                }
+            }
+
+            QGCButton {
+                text: qsTr("⚡ BURST (ALL)")
+                Layout.fillWidth: true
+                primary: panel._state.selectedMode === "burst"
+                onClicked: dropperAction ? dropperAction._selectDrop("burst", -1) : undefined
+            }
+
+            QGCButton {
+                text: qsTr("▼ DROP")
+                Layout.fillWidth: true
+                enabled: dropperAction && panel._state.selectedMode !== null
+                backgroundColor: enabled ? panel._dangerFill : Qt.rgba(0.3, 0.1, 0.1, 0.4)
+                textColor: enabled ? "white" : "#88FFFFFF"
+                onClicked: dropperAction ? dropperAction._executeDrop() : undefined
+            }
+
+            QGCLabel {
+                Layout.fillWidth: true
+                horizontalAlignment: Text.AlignHCenter
+                color: panel._accentDim
+                font.pointSize: ScreenTools.smallFontPointSize
+                text: {
+                    var n = panel._state.dropped.filter(function (d) { return d }).length
+                    if (n === 4) return qsTr("✓ ALL PAYLOADS DEPLOYED")
+                    if (n > 0)   return qsTr("%1 dropped · %2 remaining").arg(n).arg(4 - n)
+                    return ""
                 }
             }
         }
 
-        Item {
+        // ==== LOAD: open all gates, then load sequentially ===================
+        ColumnLayout {
+            visible: dropperAction && dropperAction._dropperSection === "load"
+            Layout.fillWidth: true
+            spacing: ScreenTools.defaultFontPixelWidth * 0.4
+
+            QGCLabel {
+                text: qsTr("Open gates, insert payloads, then load in sequence (1 → 4).")
+                color: panel._accentDim
+                font.pointSize: ScreenTools.smallFontPointSize
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
+            }
+
+            QGCButton {
+                text: qsTr("⊞ OPEN ALL GATES")
+                Layout.fillWidth: true
+                enabled: !!dropperAction && !!dropperAction._activeVehicle
+                onClicked: unloadConfirmDialog.open()
+            }
+
+            GridLayout {
+                columns: 2
+                Layout.fillWidth: true
+                columnSpacing: ScreenTools.defaultFontPixelWidth * 0.4
+                rowSpacing: ScreenTools.defaultFontPixelWidth * 0.4
+
+                Repeater {
+                    model: 4
+                    delegate: QGCButton {
+                        required property int index
+                        readonly property bool _loaded: panel._state.loaded[index]
+                        Layout.fillWidth: true
+                        text: _loaded ? qsTr("✓ PLD %1 LOADED").arg(index + 1) : qsTr("▼ LOAD PLD %1").arg(index + 1)
+                        primary: _loaded
+                        enabled: dropperAction && !!dropperAction._activeVehicle && dropperAction._dropperCanLoad(index) && !_loaded
+                        onClicked: dropperAction ? dropperAction._dropperLoadPayload(index) : undefined
+                    }
+                }
+            }
+
+            QGCLabel {
+                Layout.fillWidth: true
+                horizontalAlignment: Text.AlignHCenter
+                color: panel._accentDim
+                font.pointSize: ScreenTools.smallFontPointSize
+                text: {
+                    var n = panel._state.loaded.filter(function (l) { return l }).length
+                    if (n === 4) return qsTr("✓ ALL 4 PAYLOADS LOADED — READY")
+                    if (n > 0)   return qsTr("%1 loaded · load PLD %2 next").arg(n).arg(n + 1)
+                    return ""
+                }
+            }
+        }
+
+        // ==== CAMERA =========================================================
+        ColumnLayout {
             visible: dropperAction && dropperAction._dropperSection === "camera"
             Layout.fillWidth: true
-            implicitHeight: cameraColumn.implicitHeight
+            spacing: ScreenTools.defaultFontPixelWidth * 0.4
 
-            ColumnLayout {
-                id: cameraColumn
-                anchors.left: parent.left
-                anchors.right: parent.right
-                spacing: ScreenTools.defaultFontPixelWidth * 0.35
+            // When the camera is the maximized window the controls live on the video
+            // overlay, so the panel just points the operator there (req. 4).
+            QGCLabel {
+                visible: dropperAction && dropperAction.cameraMaximized
+                text: qsTr("Camera controls are shown over the maximized video.")
+                color: panel._accentDim
+                font.pointSize: ScreenTools.smallFontPointSize
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
+            }
 
-                GridLayout {
-                    columns: 3
-                    spacing: ScreenTools.defaultFontPixelWidth * 0.35
-                    Layout.fillWidth: true
-
-                    Item { Layout.preferredWidth: parent.width / 3 }
-
-                    QGCButton {
-                        text: qsTr("↑")
-                        font.pointSize: ScreenTools.defaultFontPointSize * 1.5
-                        onClicked: dropperAction ? dropperAction._dropperSendCameraAction("pan-up") : undefined
-                        Layout.preferredWidth: parent.width / 3
-                    }
-
-                    Item { Layout.preferredWidth: parent.width / 3 }
-
-                    QGCButton {
-                        text: qsTr("←")
-                        font.pointSize: ScreenTools.defaultFontPointSize * 1.5
-                        onClicked: dropperAction ? dropperAction._dropperSendCameraAction("tilt-left") : undefined
-                        Layout.preferredWidth: parent.width / 3
-                    }
-
-                    QGCButton {
-                        text: qsTr("■")
-                        font.pointSize: ScreenTools.defaultFontPointSize * 1.5
-                        onClicked: dropperAction ? dropperAction._dropperSendCameraAction("stop") : undefined
-                        Layout.preferredWidth: parent.width / 3
-                    }
-
-                    QGCButton {
-                        text: qsTr("→")
-                        font.pointSize: ScreenTools.defaultFontPointSize * 1.5
-                        onClicked: dropperAction ? dropperAction._dropperSendCameraAction("tilt-right") : undefined
-                        Layout.preferredWidth: parent.width / 3
-                    }
-
-                    Item { Layout.preferredWidth: parent.width / 3 }
-
-                    QGCButton {
-                        text: qsTr("↓")
-                        font.pointSize: ScreenTools.defaultFontPointSize * 1.5
-                        onClicked: dropperAction ? dropperAction._dropperSendCameraAction("pan-down") : undefined
-                        Layout.preferredWidth: parent.width / 3
-                    }
-
-                    Item { Layout.preferredWidth: parent.width / 3 }
-                }
-
-                RowLayout {
-                    spacing: ScreenTools.defaultFontPixelWidth * 0.35
-                    Layout.fillWidth: true
-
-                    Item { Layout.preferredWidth: parent.width / 3 }
-
-                    QGCButton {
-                        text: qsTr("-")
-                        font.pointSize: ScreenTools.defaultFontPointSize * 1.5
-                        onClicked: dropperAction ? dropperAction._dropperSendCameraAction("zoom-out") : undefined
-                        Layout.preferredWidth: parent.width / 3
-                    }
-
-                    QGCButton {
-                        text: qsTr("+")
-                        font.pointSize: ScreenTools.defaultFontPointSize * 1.5
-                        onClicked: dropperAction ? dropperAction._dropperSendCameraAction("zoom-in") : undefined
-                        Layout.preferredWidth: parent.width / 3
-                    }
-                }
-
-                RowLayout {
-                    spacing: ScreenTools.defaultFontPixelWidth * 0.35
-                    Layout.fillWidth: true
-
-                    QGCButton {
-                        text: qsTr("Capture")
-                        onClicked: dropperAction ? dropperAction._dropperSendCameraAction("capture") : undefined
-                        Layout.preferredWidth: parent.width / 3
-                    }
-
-                    QGCButton {
-                        text: qsTr("Track")
-                        onClicked: dropperAction ? dropperAction._dropperSendCameraAction("track-center") : undefined
-                        Layout.preferredWidth: parent.width / 3
-                    }
-
-                    QGCButton {
-                        text: qsTr("Rec")
-                        onClicked: dropperAction ? dropperAction._dropperSendCameraAction("rec-start") : undefined
-                        Layout.preferredWidth: parent.width / 3
-                    }
-                }
-
-                RowLayout {
-                    spacing: ScreenTools.defaultFontPixelWidth * 0.35
-                    Layout.fillWidth: true
-
-                    QGCButton {
-                        text: qsTr("TV")
-                        onClicked: dropperAction ? dropperAction._dropperSelectFeed("TV") : undefined
-                        Layout.preferredWidth: parent.width / 3
-                    }
-
-                    QGCButton {
-                        text: qsTr("IR")
-                        onClicked: dropperAction ? dropperAction._dropperSelectFeed("IR") : undefined
-                        Layout.preferredWidth: parent.width / 3
-                    }
-
-                    QGCButton {
-                        text: dropperAction && dropperAction._dropperIrFeedActive ? qsTr("IR active") : qsTr("TV active")
-                        enabled: false
-                        Layout.preferredWidth: parent.width / 3
-                    }
+            FlyViewCameraControls {
+                id: cameraControls
+                visible: dropperAction && !dropperAction.cameraMaximized
+                Layout.fillWidth: true
+                compact: true
+                onStatusMessage: function (text) {
+                    if (dropperAction) dropperAction._setStatus(text)
                 }
             }
         }

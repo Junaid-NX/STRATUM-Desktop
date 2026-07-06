@@ -1,0 +1,253 @@
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
+
+import QGroundControl
+import QGroundControl.Controls
+
+// STRATUM camera / gimbal control cluster. Self-contained: every button drives
+// QGroundControl.videoManager.sendCameraAction() directly (the YunZhuo/Skydroid
+// TOP protocol over UDP), mirroring the UAV-VAS web UI camera panel:
+//   * TV / IR feed select
+//   * Pan / Tilt cross (arrow glyphs, hold-to-move -> stop on release)
+//   * Zoom - / +
+//   * Capture / Record (toggle) / Track (toggle)
+//   * False-colour palette
+//
+// Reused in two places (FlyViewDropperPanel camera section, and the maximized
+// video overlay in FlyView) so the controls follow the camera when it is the
+// maximized window and fold back into the dropper when the map is maximized.
+Item {
+    id: root
+
+    // overlayMode: translucent card drawn over the live video (maximized camera).
+    // Otherwise it renders flush for embedding inside the dropper panel.
+    property bool overlayMode: false
+    // compact: tighter spacing / fonts for the picture-in-picture / panel context.
+    property bool compact: false
+
+    // Emitted after every command so the host (dropper panel / overlay) can show feedback.
+    signal statusMessage(string text)
+
+    property bool _feedIrActive: false
+    property bool _recActive:    false
+    property bool _trackActive:  false
+
+    readonly property color _accent:    "#3DFFA6"
+    readonly property color _accentDim:  "#1FB97D"
+    readonly property real  _btnHeight:  ScreenTools.defaultFontPixelHeight * (compact ? 1.9 : 2.3)
+    readonly property real  _spacing:    ScreenTools.defaultFontPixelWidth * 0.4
+
+    implicitWidth:  contentColumn.implicitWidth
+    implicitHeight: contentColumn.implicitHeight
+
+    function _send(cameraAction) {
+        const sent = QGroundControl.videoManager.sendCameraAction(cameraAction)
+        if (!sent) {
+            root.statusMessage(qsTr("Camera command failed"))
+        }
+        return sent
+    }
+
+    function _selectFeed(feed) {
+        _feedIrActive = (feed === "IR")
+        // Palette / feed switching is applied to the active video output.
+        root.statusMessage(_feedIrActive ? qsTr("IR feed selected") : qsTr("TV feed selected"))
+    }
+
+    function _toggleRec() {
+        _recActive = !_recActive
+        if (_send(_recActive ? "rec-start" : "rec-stop")) {
+            root.statusMessage(_recActive ? qsTr("● Recording started") : qsTr("■ Recording stopped"))
+        }
+    }
+
+    function _toggleTrack() {
+        _trackActive = !_trackActive
+        if (_send(_trackActive ? "track-center" : "track-stop")) {
+            root.statusMessage(_trackActive ? qsTr("◎ Tracking centre") : qsTr("✕ Tracking off"))
+        }
+    }
+
+    // Hold-to-move gimbal button: repeats the pan/tilt command while held, sends
+    // "stop" on release (matches web UI camStart / camStop, 200 ms interval).
+    component PtzButton : QGCButton {
+        id: ptzButton
+        property string ptzAction
+        implicitHeight: root._btnHeight
+        Layout.fillWidth: true
+        onPressedChanged: {
+            if (pressed) {
+                root._send(ptzAction)
+                ptzHoldTimer.restart()
+            } else {
+                ptzHoldTimer.stop()
+                root._send("stop")
+            }
+        }
+        Timer {
+            id: ptzHoldTimer
+            interval: 200
+            repeat: true
+            onTriggered: root._send(ptzButton.ptzAction)
+        }
+    }
+
+    Rectangle {
+        anchors.fill: parent
+        visible: root.overlayMode
+        color: Qt.rgba(0, 0, 0, 0.72)
+        radius: ScreenTools.defaultBorderRadius
+        border.color: root._accent
+        border.width: 1
+    }
+
+    ColumnLayout {
+        id: contentColumn
+        anchors.fill: parent
+        anchors.margins: root.overlayMode ? ScreenTools.defaultFontPixelWidth * 0.75 : 0
+        spacing: root._spacing
+
+        // ---- Feed select: TV / IR ------------------------------------------
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: root._spacing
+
+            QGCButton {
+                text: qsTr("TV")
+                implicitHeight: root._btnHeight
+                Layout.fillWidth: true
+                backRadius: ScreenTools.defaultBorderRadius
+                showBorder: true
+                primary: !root._feedIrActive
+                onClicked: root._selectFeed("TV")
+            }
+            QGCButton {
+                text: qsTr("IR")
+                implicitHeight: root._btnHeight
+                Layout.fillWidth: true
+                backRadius: ScreenTools.defaultBorderRadius
+                showBorder: true
+                primary: root._feedIrActive
+                onClicked: root._selectFeed("IR")
+            }
+        }
+
+        // ---- Pan / Tilt cross (arrow glyphs, hold-to-move) -----------------
+        GridLayout {
+            Layout.fillWidth: true
+            columns: 3
+            columnSpacing: root._spacing
+            rowSpacing: root._spacing
+
+            Item { Layout.fillWidth: true; Layout.preferredHeight: root._btnHeight }
+            PtzButton { text: qsTr("▲"); ptzAction: "pan-up" }
+            Item { Layout.fillWidth: true; Layout.preferredHeight: root._btnHeight }
+
+            PtzButton { text: qsTr("◄"); ptzAction: "tilt-left" }
+            QGCButton {
+                text: qsTr("⊙")
+                implicitHeight: root._btnHeight
+                Layout.fillWidth: true
+                onClicked: { if (root._send("center")) root.statusMessage(qsTr("Gimbal centred")) }
+            }
+            PtzButton { text: qsTr("►"); ptzAction: "tilt-right" }
+
+            Item { Layout.fillWidth: true; Layout.preferredHeight: root._btnHeight }
+            PtzButton { text: qsTr("▼"); ptzAction: "pan-down" }
+            Item { Layout.fillWidth: true; Layout.preferredHeight: root._btnHeight }
+        }
+
+        // ---- Zoom ----------------------------------------------------------
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: root._spacing
+
+            QGCLabel {
+                text: qsTr("ZOOM")
+                color: root._accentDim
+                font.pointSize: ScreenTools.smallFontPointSize
+                Layout.alignment: Qt.AlignVCenter
+            }
+            QGCButton {
+                text: qsTr("−")
+                implicitHeight: root._btnHeight
+                Layout.fillWidth: true
+                onClicked: { if (root._send("zoom-out")) root.statusMessage(qsTr("Zoom out")) }
+            }
+            QGCButton {
+                text: qsTr("+")
+                implicitHeight: root._btnHeight
+                Layout.fillWidth: true
+                onClicked: { if (root._send("zoom-in")) root.statusMessage(qsTr("Zoom in")) }
+            }
+        }
+
+        // ---- Media: Capture / Record --------------------------------------
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: root._spacing
+
+            QGCButton {
+                text: qsTr("📷 Capture")
+                implicitHeight: root._btnHeight
+                Layout.fillWidth: true
+                onClicked: { if (root._send("capture")) root.statusMessage(qsTr("📷 Photo captured")) }
+            }
+            QGCButton {
+                text: root._recActive ? qsTr("■ Stop") : qsTr("● Rec")
+                implicitHeight: root._btnHeight
+                Layout.fillWidth: true
+                primary: root._recActive
+                onClicked: root._toggleRec()
+            }
+        }
+
+        // ---- Track ---------------------------------------------------------
+        QGCButton {
+            text: root._trackActive ? qsTr("✕ Stop Track") : qsTr("◎ Track")
+            implicitHeight: root._btnHeight
+            Layout.fillWidth: true
+            primary: root._trackActive
+            onClicked: root._toggleTrack()
+        }
+
+        // ---- False-colour palette -----------------------------------------
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: root._spacing
+
+            QGCLabel {
+                text: qsTr("PALETTE")
+                color: root._accentDim
+                font.pointSize: ScreenTools.smallFontPointSize
+                Layout.alignment: Qt.AlignVCenter
+            }
+            QGCComboBox {
+                id: paletteCombo
+                Layout.fillWidth: true
+                textRole: "text"
+                model: ListModel {
+                    ListElement { text: qsTr("Normal");        code: "palette-off" }
+                    ListElement { text: qsTr("White Hot");     code: "palette-01" }
+                    ListElement { text: qsTr("Black Hot");     code: "palette-0b" }
+                    ListElement { text: qsTr("Red Hot");       code: "palette-08" }
+                    ListElement { text: qsTr("Iron Red");      code: "palette-04" }
+                    ListElement { text: qsTr("Rainbow");       code: "palette-05" }
+                    ListElement { text: qsTr("Glimmer Night"); code: "palette-06" }
+                    ListElement { text: qsTr("Aurora");        code: "palette-07" }
+                    ListElement { text: qsTr("Sepia");         code: "palette-03" }
+                    ListElement { text: qsTr("Jungle");        code: "palette-09" }
+                    ListElement { text: qsTr("Medical");       code: "palette-0a" }
+                    ListElement { text: qsTr("Glory Hot");     code: "palette-0c" }
+                }
+                onActivated: (index) => {
+                    const code = model.get(index).code
+                    if (root._send(code)) {
+                        root.statusMessage(qsTr("Palette: %1").arg(model.get(index).text))
+                    }
+                }
+            }
+        }
+    }
+}

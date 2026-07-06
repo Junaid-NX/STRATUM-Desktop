@@ -8,6 +8,7 @@ ToolStripActionList {
     id: _root
 
     property var engagementController    // STRATUM: engagement/abort safety-loop controller
+    property bool cameraMaximized: false // STRATUM: true when the video is the maximized window
 
     signal displayPreFlightChecklist
     signal defineAOP      // retained: emitters relocated to the ribbon (FlyViewToolBar)
@@ -23,7 +24,7 @@ ToolStripActionList {
         GuidedActionLand { },               // Land flight mode
         GuidedActionHold { },               // Hold flight mode
         GuidedActionAbort { },              // PX4 custom "Abort" flight mode (sub=22)
-        FlyViewDropperAction { },
+        FlyViewDropperAction { cameraMaximized: _root.cameraMaximized },
         // STRATUM: PX4 custom "Engagement" flight mode (sub=21). Routed through the
         // engagement controller so the abort destination is armed (PARAM_SET) before commit.
         EngageAction {

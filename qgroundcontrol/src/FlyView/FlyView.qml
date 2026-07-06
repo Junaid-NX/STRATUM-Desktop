@@ -53,118 +53,15 @@ Item {
     property real   _rightPanelWidth:       ScreenTools.defaultFontPixelWidth * 30
     property var    _mapControl:            mapControl
     property real   _widgetMargin:          ScreenTools.defaultFontPixelWidth * 0.75
-    property var    _dropperState:          ({ selectedMode: null, selectedPayloadIdx: null, dropped: [false, false, false, false], loaded: [false, false, false, false] })
-    property string _dropperStatusText:     qsTr("Dropper ready")
-    property bool   _dropperToolsOpen:      false
-    property bool   _dropperLoadUnlocked:   false
-    property bool   _dropperLoadVisible:    false
-    property bool   _dropperDropVisible:    false
-    property bool   _dropperCameraVisible:  false
 
     property real   _fullItemZorder:    0
     property real   _pipItemZorder:     QGroundControl.zOrderWidgets
 
-    function _dropperCanLoad(index) {
-        if (index === 0) {
-            return true
-        }
-        return _dropperState.loaded[index - 1]
-    }
-
-    function _dropperSendSingle(index) {
-        if (!_activeVehicle) {
-            return
-        }
-        const bits = [0, 0, 0, 0]
-        bits[index] = 1
-        _activeVehicle.sendCommand(191, 31012, true, 5, bits[0], bits[1], bits[2], bits[3], 0, 0, 0)
-        _dropperState.dropped[index] = true
-        _dropperState.selectedMode = null
-        _dropperState.selectedPayloadIdx = null
-        _dropperStatusText = qsTr("Payload %1 dropped").arg(index + 1)
-    }
-
-    function _openDropperTools() {
-        _dropperToolsOpen = !_dropperToolsOpen
-        if (!_dropperToolsOpen) {
-            _dropperLoadVisible = false
-            _dropperDropVisible = false
-            _dropperCameraVisible = false
-        }
-    }
-
-    function _showDropperSection(section) {
-        _dropperLoadVisible = (section === "load")
-        _dropperDropVisible = (section === "drop")
-        _dropperCameraVisible = (section === "camera")
-    }
-
-    function _unlockDropperLoad() {
-        _dropperLoadUnlocked = true
-        _dropperStatusText = qsTr("Loading unlocked")
-    }
-
-    function _confirmUnloadAll() {
-        unloadConfirmDialog.open()
-    }
-
-    function _dropperSendBurst() {
-        if (!_activeVehicle) {
-            return
-        }
-        _activeVehicle.sendCommand(191, 31012, true, 10, 0, 0, 0, 0, 0, 0, 0)
-        _dropperState.dropped = [true, true, true, true]
-        _dropperState.selectedMode = "burst"
-        _dropperState.selectedPayloadIdx = null
-        _dropperStatusText = qsTr("Burst release sent")
-    }
-
-    function _dropperLoadPayload(index) {
-        if (!_activeVehicle) {
-            return
-        }
-        const bits = [0, 0, 0, 0]
-        for (let i = index + 1; i < 4; i++) {
-            bits[i] = 1
-        }
-        _activeVehicle.sendCommand(191, 31012, true, 5, bits[0], bits[1], bits[2], bits[3], 0, 0, 0)
-        for (let i = 0; i <= index; i++) {
-            _dropperState.loaded[i] = true
-            _dropperState.dropped[i] = false
-        }
-        _dropperStatusText = qsTr("Payload %1 loaded").arg(index + 1)
-    }
-
-    function _dropperUnloadAll() {
-        if (!_activeVehicle) {
-            return
-        }
-        _activeVehicle.sendCommand(191, 31012, true, 10, 0, 0, 0, 0, 0, 0, 0)
-        _dropperState.loaded = [false, false, false, false]
-        _dropperState.dropped = [false, false, false, false]
-        _dropperState.selectedMode = null
-        _dropperState.selectedPayloadIdx = null
-        _dropperLoadUnlocked = false
-        _dropperStatusText = qsTr("All payload gates opened")
-    }
-
-    function _dropperSendCameraAction(action) {
-        if (!_activeVehicle) {
-            return
-        }
-        const sent = QGroundControl.videoManager.sendCameraAction(action)
-        if (!sent) {
-            _dropperStatusText = qsTr("Camera command failed")
-            return
-        }
-        if (action === "track-center") {
-            _dropperStatusText = qsTr("Tracking center")
-        } else if (action === "capture") {
-            _dropperStatusText = qsTr("Capture command sent")
-        } else {
-            _dropperStatusText = qsTr("Camera %1 sent").arg(action)
-        }
-    }
+    // STRATUM: true when the video (camera) is the maximized window rather than the
+    // map. Drives the on-video camera-control overlay and tells the dropper panel to
+    // fold its camera controls away (they live on the video instead). See req. 4.
+    readonly property bool _cameraMaximized: QGroundControl.videoManager.hasVideo &&
+                                             videoControl.pipState.state === videoControl.pipState.fullState
 
     function _calcCenterViewPort() {
         var newToolInset = Qt.rect(0, 0, width, height)
@@ -233,6 +130,7 @@ Item {
             parentToolInsets:       _toolInsets
             mapControl:             _mapControl
             engagementController:   engagementController
+            cameraMaximized:        _cameraMaximized
             visible:                !QGroundControl.videoManager.fullScreen
         }
 
@@ -243,6 +141,22 @@ Item {
             parentToolInsets:   widgetLayer.totalToolInsets
             mapControl:         _mapControl
             visible:            !QGroundControl.videoManager.fullScreen
+        }
+
+        // STRATUM: camera / gimbal controls overlaid on the live video when the camera
+        // is the maximized window. Lives in mapHolder (not the widget layer) so it stays
+        // visible in full-screen video, where the widget layer is hidden. When the map is
+        // maximized this hides and the same controls fold back into the dropper panel's
+        // camera section (req. 4).
+        FlyViewCameraControls {
+            id:                     videoCameraOverlay
+            overlayMode:            true
+            anchors.right:          parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.rightMargin:    _toolsMargin
+            width:                  ScreenTools.defaultFontPixelWidth * 24
+            z:                      QGroundControl.zOrderWidgets + 1
+            visible:                _cameraMaximized
         }
 
         // Development tool for visualizing the insets for a paticular layer, show if needed

@@ -22,6 +22,7 @@ Item {
     property var    totalToolInsets:        _totalToolInsets
     property var    mapControl
     property var    engagementController    // STRATUM: forwarded to the Engage trigger
+    property bool   cameraMaximized:        false   // STRATUM: video is the maximized window
 
     property var    _activeVehicle:         QGroundControl.multiVehicleManager.activeVehicle
     property var    _planMasterController:  globals.planMasterControllerFlyView
@@ -229,6 +230,7 @@ Item {
         anchors.left:           parent.left
         anchors.top:            parent.top
         engagementController:    _root.engagementController
+        cameraMaximized:         _root.cameraMaximized
         z:                      QGroundControl.zOrderWidgets
         maxHeight:              parent.height - y - parentToolInsets.bottomEdgeLeftInset - _toolsMargin
         visible:                !QGroundControl.videoManager.fullScreen
