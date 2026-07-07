@@ -20,7 +20,17 @@ ToolStripActionList {
     // (the mode menu's working path). Define AOP and Set Standoff were relocated to the
     // centre of the top ribbon; Takeoff and Safe Recovery were removed from the strip.
     model: [
-        GuidedActionStandoffMode { },       // Standoff flight mode (hold-to-confirm)
+        // STRATUM: Standoff opens the Set Standoff target-entry panel, which commits via
+        // the web-UI contract (cmd 31010 params + 31011 activate to the bridge). It does
+        // NOT switch to a hard-coded PX4 flight mode — the bridge enters "Standoff Mode"
+        // itself and QGC picks that mode up dynamically from AVAILABLE_MODES.
+        ToolStripAction {
+            text:        qsTr("Standoff")
+            iconSource:  "/qmlimages/StandoffMarker.svg"
+            visible:     true
+            enabled:     !!QGroundControl.multiVehicleManager.activeVehicle
+            onTriggered: _root.setStandoff()
+        },
         GuidedActionLand { },               // Land flight mode
         GuidedActionHold { },               // Hold flight mode
         GuidedActionAbort { },              // PX4 custom "Abort" flight mode (sub=22)
