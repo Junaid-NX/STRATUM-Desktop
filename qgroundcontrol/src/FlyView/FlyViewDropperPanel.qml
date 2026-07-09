@@ -127,7 +127,28 @@ Rectangle {
                 enabled: dropperAction && panel._state.selectedMode !== null
                 backgroundColor: enabled ? panel._dangerFill : Qt.rgba(0.3, 0.1, 0.1, 0.4)
                 textColor: enabled ? "white" : "#88FFFFFF"
+                onClicked: dropperAction ? dropperAction._requestDrop() : undefined
+            }
+
+            // Safety-override — shown only after a drop was blocked by the distance check,
+            // matching the web UI override flow.
+            QGCButton {
+                visible: dropperAction && dropperAction._dropBlockReason !== ""
+                Layout.fillWidth: true
+                text: qsTr("⚠ OVERRIDE & DROP")
+                backgroundColor: "#7A1FA2"
+                textColor: "white"
                 onClicked: dropperAction ? dropperAction._executeDrop() : undefined
+            }
+
+            QGCLabel {
+                visible: dropperAction && dropperAction._dropBlockReason !== ""
+                Layout.fillWidth: true
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.WordWrap
+                color: "#FBBF24"
+                font.pointSize: ScreenTools.smallFontPointSize
+                text: qsTr("Overriding safety checks may release the payload in an unintended location.")
             }
 
             QGCLabel {

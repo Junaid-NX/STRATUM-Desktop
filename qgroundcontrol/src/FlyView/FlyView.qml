@@ -131,6 +131,7 @@ Item {
             mapControl:             _mapControl
             engagementController:   engagementController
             cameraMaximized:        _cameraMaximized
+            standoffController:     mapControl.standoffCmdController
             visible:                !QGroundControl.videoManager.fullScreen
         }
 
@@ -223,8 +224,9 @@ Item {
         }
 
         // Message display floats just above the bottom confirm bar. Defined here (not
-        // inside GuidedActionConfirm) so it is not clipped and so messageFadeTimer /
-        // messageOpacityAnimation remain resolvable from the confirm control.
+        // inside GuidedActionConfirm) so it is not clipped by the bar. Its opacity is
+        // driven by GuidedActionConfirm's own fade timer/animation (which target this
+        // rectangle through the messageDisplay property).
         Rectangle {
             id:                         guidedActionMessageDisplay
             anchors.bottom:             guidedActionConfirmBottomBar.top
@@ -232,8 +234,6 @@ Item {
             anchors.horizontalCenter:   guidedActionConfirmBottomBar.horizontalCenter
             width:                      messageLabel.contentWidth + (_margins * 2)
             height:                     messageLabel.contentHeight + (_margins * 2)
-            // Opacity is intentionally left unbound: GuidedActionConfirm drives it via
-            // messageFadeTimer / messageOpacityAnimation (fade out) and reset (back to 1).
             color:                      qgcPal.windowTransparent
             radius:                     ScreenTools.defaultBorderRadius
             visible:                    guidedActionConfirmBottom.visible
@@ -246,21 +246,6 @@ Item {
                 width:      ScreenTools.defaultFontPixelWidth * 30
                 wrapMode:   Text.WordWrap
                 text:       guidedActionConfirmBottom.message
-            }
-
-            PropertyAnimation {
-                id:         messageOpacityAnimation
-                target:     guidedActionMessageDisplay
-                property:   "opacity"
-                from:       1
-                to:         0
-                duration:   500
-            }
-
-            Timer {
-                id:             messageFadeTimer
-                interval:       4000
-                onTriggered:    messageOpacityAnimation.start()
             }
         }
 

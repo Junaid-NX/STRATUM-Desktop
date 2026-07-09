@@ -23,6 +23,7 @@ Item {
     property var    mapControl
     property var    engagementController    // STRATUM: forwarded to the Engage trigger
     property bool   cameraMaximized:        false   // STRATUM: video is the maximized window
+    property var    standoffController              // STRATUM: forwarded to the dropper drop check
 
     property var    _activeVehicle:         QGroundControl.multiVehicleManager.activeVehicle
     property var    _planMasterController:  globals.planMasterControllerFlyView
@@ -231,6 +232,7 @@ Item {
         anchors.top:            parent.top
         engagementController:    _root.engagementController
         cameraMaximized:         _root.cameraMaximized
+        standoffController:      _root.standoffController
         z:                      QGroundControl.zOrderWidgets
         maxHeight:              parent.height - y - parentToolInsets.bottomEdgeLeftInset - _toolsMargin
         visible:                !QGroundControl.videoManager.fullScreen

@@ -27,34 +27,68 @@ ToolStripAction {
     // overlay) or the map is maximized (controls stay inside this dropper panel).
     property bool cameraMaximized: false
 
+    // STRATUM: the standoff controller (threaded down from FlyView) supplies the target
+    // coordinate for the drop safety check (UAV must be within _maxTargetDistanceM of it).
+    property var standoffController: null
+
     property var _activeVehicle: QGroundControl.multiVehicleManager.activeVehicle
     property string _dropperSection: "drop"
     property var _dropperState: ({ selectedMode: null, selectedPayloadIdx: null, dropped: [false, false, false, false], loaded: [false, false, false, false] })
     property string _dropperStatusText: qsTr("Dropper ready")
 
-    // STRATUM: minimum distance from the takeoff/home point before a payload may be
-    // dropped, matching the web UI safety check (drop is blocked within 100 m of takeoff).
-    readonly property real _minDropDistanceM: 100
+    // Non-empty when the last drop attempt was blocked by the safety check. Drives the
+    // panel's "Override & Drop" button (matches the web UI safety-override flow).
+    property string _dropBlockReason: ""
 
-    // Returns { ok, reason }. Blocks the drop unless we can confirm the UAV is at least
-    // _minDropDistanceM from the takeoff (home) point — same gate as the web UI.
+    // STRATUM: web-UI drop safety envelope — the UAV must be at least _minTakeoffDistanceM
+    // from the takeoff (home) point AND within _maxTargetDistanceM of the standoff target.
+    readonly property real _minTakeoffDistanceM: 100
+    readonly property real _maxTargetDistanceM:  5
+
+    // Returns { ok, reason }. Mirrors the web UI _checkEngageConditions: requires a UAV
+    // position, a stored standoff target, distance-from-takeoff ≥ 100 m and
+    // distance-to-target ≤ 5 m. The operator can override a failure (see _requestDrop).
     function _dropSafetyCheck() {
         if (!_activeVehicle) {
             return ({ ok: false, reason: qsTr("No vehicle connected.") })
         }
         const here = _activeVehicle.coordinate
-        const home = _activeVehicle.homePosition
         if (!here.isValid) {
-            return ({ ok: false, reason: qsTr("No UAV position — cannot verify distance from takeoff.") })
+            return ({ ok: false, reason: qsTr("No UAV position — cannot verify distances.") })
         }
-        if (!home.isValid) {
-            return ({ ok: false, reason: qsTr("No takeoff point yet — arm/takeoff first to set it.") })
+        const target = standoffController ? standoffController._targetCoordinate : null
+        if (!target || !target.isValid) {
+            return ({ ok: false, reason: qsTr("No target — set a Standoff target first.") })
         }
-        const dist = here.distanceTo(home)
-        if (dist < _minDropDistanceM) {
-            return ({ ok: false, reason: qsTr("UAV is %1 m from takeoff — must be ≥ %2 m away to drop.").arg(Math.round(dist)).arg(_minDropDistanceM) })
+        const home = _activeVehicle.homePosition
+        const distToTarget  = here.distanceTo(target)
+        const distToTakeoff = home.isValid ? here.distanceTo(home) : -1
+        const tooClose = (distToTakeoff >= 0) && (distToTakeoff < _minTakeoffDistanceM)
+        const tooFar   = distToTarget > _maxTargetDistanceM
+        if (tooClose && tooFar) {
+            return ({ ok: false, reason: qsTr("UAV is %1 m from takeoff (min %2 m) and %3 m from target (max %4 m).")
+                        .arg(Math.round(distToTakeoff)).arg(_minTakeoffDistanceM).arg(Math.round(distToTarget)).arg(_maxTargetDistanceM) })
+        }
+        if (tooClose) {
+            return ({ ok: false, reason: qsTr("UAV is %1 m from takeoff — must be ≥ %2 m away to drop.").arg(Math.round(distToTakeoff)).arg(_minTakeoffDistanceM) })
+        }
+        if (tooFar) {
+            return ({ ok: false, reason: qsTr("UAV is %1 m from target — must be within %2 m to drop.").arg(Math.round(distToTarget)).arg(_maxTargetDistanceM) })
         }
         return ({ ok: true, reason: "" })
+    }
+
+    // DROP button entry point: run the safety check; on failure record the reason so the
+    // panel can offer an override, otherwise drop immediately.
+    function _requestDrop() {
+        const chk = _dropSafetyCheck()
+        if (chk.ok) {
+            _dropBlockReason = ""
+            _executeDrop()
+        } else {
+            _dropBlockReason = chk.reason
+            _dropperStatusText = chk.reason
+        }
     }
 
     function _showDropperSection(section) {
@@ -67,6 +101,8 @@ ToolStripAction {
 
     // ---- DROP: select-then-commit (matches web UI selectDrop / onDropClick) ----
     function _selectDrop(mode, index) {
+        // Changing the selection clears any pending safety-override prompt.
+        _dropBlockReason = ""
         if (mode === "burst") {
             _dropperState.selectedMode = "burst"
             _dropperState.selectedPayloadIdx = null
@@ -82,15 +118,13 @@ ToolStripAction {
         _dropperState = Object.assign({}, _dropperState)
     }
 
+    // Commits the selected drop. Called directly for the override path (bypasses the
+    // safety check) and by _requestDrop once the check passes.
     function _executeDrop() {
         if (!_activeVehicle || !_dropperState.selectedMode) {
             return
         }
-        const safety = _dropSafetyCheck()
-        if (!safety.ok) {
-            _dropperStatusText = safety.reason
-            return
-        }
+        _dropBlockReason = ""
         if (_dropperState.selectedMode === "burst") {
             _activeVehicle.sendCommand(191, 31012, true, 10, 0, 0, 0, 0, 0, 0, 0)
             _dropperState.dropped = [true, true, true, true]
