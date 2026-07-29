@@ -21,6 +21,10 @@ Item {
     readonly property bool _is3DMode:       QGCViewer3DManager.displayMode === QGCViewer3DManager.View3D
     readonly property bool _keepSceneAlive: QGroundControl.settingsManager.viewer3DSettings.keepSceneAlive.rawValue
 
+    // STRATUM: active vehicle profile (1 = Dropper, 2 = Dagger). Gates Dropper-only UI
+    // such as the on-video camera-control overlay.
+    readonly property bool _stratumIsDropper: QGroundControl.settingsManager.appSettings.stratumProfile.rawValue === 1
+
     // These should only be used by MainRootWindow
     property var planController:    _planController
     property var guidedController:  _guidedController
@@ -223,7 +227,7 @@ Item {
             anchors.rightMargin:    _toolsMargin
             width:                  ScreenTools.defaultFontPixelWidth * 24
             z:                      QGroundControl.zOrderWidgets + 1
-            visible:                _cameraMaximized
+            visible:                _cameraMaximized && _stratumIsDropper
         }
 
         // Development tool for visualizing the insets for a paticular layer, show if needed

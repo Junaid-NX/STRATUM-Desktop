@@ -26,6 +26,67 @@ ApplicationWindow {
     Component.onCompleted: {
         // Start the sequence of first run prompt(s)
         firstRunPromptManager.nextPrompt()
+        // STRATUM: force a vehicle-profile choice on first launch (Dropper vs Dagger).
+        if (QGroundControl.settingsManager.appSettings.stratumProfile.rawValue === 0) {
+            stratumProfileDialog.open()
+        }
+    }
+
+    // STRATUM: startup profile selector. Shown until the operator picks Dropper or Dagger;
+    // the choice is persisted in appSettings.stratumProfile and can be changed later in
+    // Application Settings. Modal with no auto-close so a choice must be made.
+    Popup {
+        id:               stratumProfileDialog
+        parent:           Overlay.overlay
+        anchors.centerIn: parent
+        modal:            true
+        focus:            true
+        closePolicy:      Popup.NoAutoClose
+        padding:          ScreenTools.defaultFontPixelWidth * 2
+
+        function _select(profile) {
+            QGroundControl.settingsManager.appSettings.stratumProfile.rawValue = profile
+            close()
+        }
+
+        background: Rectangle {
+            color:        qgcPal.window
+            border.color: qgcPal.text
+            border.width: 1
+            radius:       ScreenTools.defaultBorderRadius
+        }
+
+        contentItem: ColumnLayout {
+            spacing: ScreenTools.defaultFontPixelHeight
+
+            QGCLabel {
+                text:               qsTr("Select STRATUM Profile")
+                font.pointSize:     ScreenTools.largeFontPointSize
+                font.bold:          true
+                Layout.alignment:   Qt.AlignHCenter
+            }
+            QGCLabel {
+                text:                qsTr("Choose the vehicle you are operating. This loads the matching Fly View. You can change it later in Application Settings.")
+                wrapMode:            Text.WordWrap
+                Layout.maximumWidth: ScreenTools.defaultFontPixelWidth * 44
+                Layout.fillWidth:    true
+            }
+            RowLayout {
+                Layout.alignment: Qt.AlignHCenter
+                spacing:          ScreenTools.defaultFontPixelWidth * 2
+
+                QGCButton {
+                    text:       qsTr("Dropper")
+                    pointSize:  ScreenTools.largeFontPointSize
+                    onClicked:  stratumProfileDialog._select(1)
+                }
+                QGCButton {
+                    text:       qsTr("Dagger")
+                    pointSize:  ScreenTools.largeFontPointSize
+                    onClicked:  stratumProfileDialog._select(2)
+                }
+            }
+        }
     }
 
     /// Saves main window position and size and re-opens it in the same position and size next time

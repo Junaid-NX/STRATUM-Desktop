@@ -6,6 +6,16 @@
     },
     "groups": [
         {
+            "heading": "STRATUM",
+            "keywords": ["stratum", "profile", "dropper", "dagger", "vehicle", "mode"],
+            "controls": [
+                {
+                    "setting": "appSettings.stratumProfile",
+                    "control": "combobox"
+                }
+            ]
+        },
+        {
             "heading": "General",
             "keywords": ["language", "locale", "color scheme", "dark mode", "theme", "palette", "follow me", "audio", "volume", "sound", "gstreamer", "debug level", "ui scale", "font size", "zoom", "save path", "storage", "reset", "clear settings", "factory reset"],
             "controls": [

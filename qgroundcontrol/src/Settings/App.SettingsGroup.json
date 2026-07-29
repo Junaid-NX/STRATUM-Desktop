@@ -380,6 +380,17 @@
             "default": true,
             "label": "Elapsed Timestamps",
             "keywords": "log,time,elapsed,timestamp,console"
+        },
+        {
+            "name": "stratumProfile",
+            "shortDesc": "STRATUM vehicle profile — selects the Dropper or Dagger Fly View.",
+            "longDesc": "Chooses which STRATUM vehicle profile the Fly View loads: Dropper (payload dropper) or Dagger (strike/targeting). 0 = not selected, which triggers the profile-selection dialog on startup.",
+            "type": "uint32",
+            "enumStrings": "Not Selected,Dropper,Dagger",
+            "enumValues": "0,1,2",
+            "default": 0,
+            "label": "STRATUM Vehicle Profile",
+            "keywords": "stratum,profile,dropper,dagger,vehicle,mode"
         }
     ]
 }

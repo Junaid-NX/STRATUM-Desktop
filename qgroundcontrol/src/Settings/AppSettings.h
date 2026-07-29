@@ -54,6 +54,7 @@ public:
     DEFINE_SETTINGFACT(firstRunPromptIdsShown)
     DEFINE_SETTINGFACT(favoriteParameters)
     DEFINE_SETTINGFACT(showAppLogTimestampAsElapsedTime)
+    DEFINE_SETTINGFACT(stratumProfile)
 
     // QSettings key for clearSettingsNextBoot. Accessed directly by QGCApplication
     // at startup before SettingsManager is initialized.
