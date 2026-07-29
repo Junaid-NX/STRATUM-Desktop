@@ -38,6 +38,75 @@ Item {
         id: engagementController
     }
 
+    // STRATUM: low-battery RTL safety monitor. While armed, if the battery pack voltage
+    // stays at or below the configured threshold (flyViewSettings.lowBatteryRTLVoltage,
+    // 0 = disabled) continuously for _holdSeconds, prompt the operator to send an RTL.
+    // The sustained window rejects momentary voltage sag/spikes, so a single dip does not
+    // trigger the prompt. Re-prompting is suppressed until the voltage recovers above the
+    // threshold, to avoid spamming the operator who chose not to return.
+    Item {
+        id: lowBatteryRTLMonitor
+
+        readonly property int  _holdSeconds: 20
+        readonly property var  _vehicle:     QGroundControl.multiVehicleManager.activeVehicle
+        readonly property real _threshold:   QGroundControl.settingsManager.flyViewSettings.lowBatteryRTLVoltage.rawValue
+        readonly property var  _battery:     (_vehicle && _vehicle.batteries.count > 0) ? _vehicle.batteries.get(0) : null
+        readonly property real _voltage:     _battery ? _battery.voltage.rawValue : Number.NaN
+        readonly property bool _monitorOn:   !!_vehicle && _vehicle.armed && _threshold > 0
+
+        property int  _secondsBelow: 0
+        property bool _prompted:     false
+
+        function _isBelowThreshold() {
+            return !isNaN(_voltage) && _voltage > 0 && _voltage <= _threshold
+        }
+
+        function _promptRTL() {
+            if (!_vehicle) {
+                return
+            }
+            QGroundControl.showMessageDialog(
+                mainWindow,
+                qsTr("Low Battery"),
+                qsTr("Battery voltage (%1 V) has stayed at or below the %2 V threshold for %3 s. Send RTL (Return To Launch)?")
+                    .arg(_voltage.toFixed(2)).arg(_threshold.toFixed(2)).arg(_holdSeconds),
+                Dialog.Yes | Dialog.No,
+                function() {
+                    if (lowBatteryRTLMonitor._vehicle) {
+                        lowBatteryRTLMonitor._vehicle.guidedModeRTL(false)
+                    }
+                })
+        }
+
+        // Reset the window/prompt whenever monitoring stops (disarm, vehicle change, or
+        // the feature is disabled).
+        onMonitorOnChanged: {
+            if (!_monitorOn) {
+                _secondsBelow = 0
+                _prompted = false
+            }
+        }
+
+        Timer {
+            interval:   1000
+            repeat:     true
+            running:    lowBatteryRTLMonitor._monitorOn
+            onTriggered: {
+                if (lowBatteryRTLMonitor._isBelowThreshold()) {
+                    lowBatteryRTLMonitor._secondsBelow++
+                    if (lowBatteryRTLMonitor._secondsBelow >= lowBatteryRTLMonitor._holdSeconds && !lowBatteryRTLMonitor._prompted) {
+                        lowBatteryRTLMonitor._prompted = true
+                        lowBatteryRTLMonitor._promptRTL()
+                    }
+                } else {
+                    // Voltage recovered above threshold: reset the window and re-arm the prompt.
+                    lowBatteryRTLMonitor._secondsBelow = 0
+                    lowBatteryRTLMonitor._prompted = false
+                }
+            }
+        }
+    }
+
     property bool   _mainWindowIsMap:       mapControl.pipState.state === mapControl.pipState.fullState
     property bool   _isFullWindowItemDark:  _mainWindowIsMap ? mapControl.isSatelliteMap : true
     property var    _activeVehicle:         QGroundControl.multiVehicleManager.activeVehicle

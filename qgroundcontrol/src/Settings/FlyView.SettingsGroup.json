@@ -136,6 +136,18 @@
             "default": true,
             "label": "Enable automatic mission start/resume popups",
             "keywords": "mission popup"
+        },
+        {
+            "name": "lowBatteryRTLVoltage",
+            "shortDesc": "Battery voltage at or below which STRATUM prompts to Return-To-Launch. Set 0 to disable. The prompt only appears after the voltage stays at/below this value continuously for the debounce period, to ignore momentary voltage sag.",
+            "longDesc": "Low-battery RTL safety threshold in volts (pack voltage). When armed, if the battery voltage stays at or below this value for the debounce period, a dialog offers to send an RTL command. 0 disables the feature.",
+            "type": "double",
+            "units": "V",
+            "min": 0,
+            "decimalPlaces": 2,
+            "default": 0,
+            "label": "Low-battery RTL voltage threshold",
+            "keywords": "battery,voltage,rtl,return,low,safety,threshold"
         }
     ]
 }

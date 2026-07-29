@@ -62,6 +62,15 @@
             ]
         },
         {
+            "heading": "Battery Safety",
+            "keywords": ["battery", "voltage", "rtl", "return", "low battery", "safety", "threshold"],
+            "controls": [
+                {
+                    "setting": "flyViewSettings.lowBatteryRTLVoltage"
+                }
+            ]
+        },
+        {
             "component": "MavlinkActionSettings",
             "sectionName": "MAVLink Actions",
             "keywords": [
