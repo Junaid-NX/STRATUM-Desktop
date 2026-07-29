@@ -78,19 +78,16 @@ Item {
                 })
         }
 
-        // Reset the window/prompt whenever monitoring stops (disarm, vehicle change, or
-        // the feature is disabled).
-        onMonitorOnChanged: {
-            if (!_monitorOn) {
-                _secondsBelow = 0
-                _prompted = false
-            }
-        }
-
         Timer {
             interval:   1000
             repeat:     true
             running:    lowBatteryRTLMonitor._monitorOn
+            // Reset the window/prompt whenever monitoring starts or stops (arm, disarm,
+            // vehicle change, or the feature being enabled/disabled).
+            onRunningChanged: {
+                lowBatteryRTLMonitor._secondsBelow = 0
+                lowBatteryRTLMonitor._prompted = false
+            }
             onTriggered: {
                 if (lowBatteryRTLMonitor._isBelowThreshold()) {
                     lowBatteryRTLMonitor._secondsBelow++
