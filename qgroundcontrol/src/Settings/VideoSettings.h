@@ -19,6 +19,7 @@ public:
     DEFINE_SETTINGFACT(rtspUrl)
     DEFINE_SETTINGFACT(tvRtspUrl)
     DEFINE_SETTINGFACT(irRtspUrl)
+    DEFINE_SETTINGFACT(daggerRtspUrl)   // STRATUM: Dagger single-feed URL
     DEFINE_SETTINGFACT(aspectRatio)
     DEFINE_SETTINGFACT(videoFit)
     DEFINE_SETTINGFACT(gridLines)
@@ -70,6 +71,10 @@ signals:
 
 private slots:
     void _configChanged             (QVariant value);
+    // STRATUM: reads AppSettings.stratumProfile and copies the profile-scoped RTSP URL
+    // (daggerRtspUrl for Dagger, tvRtspUrl for Dropper) into the active rtspUrl fact.
+    // Idempotent + preserves TV/IR toggle state under Dropper. See implementation.
+    void _applyStratumProfileToRtsp ();
 
 private:
     void _setDefaults               ();

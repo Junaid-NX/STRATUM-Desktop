@@ -5,6 +5,12 @@
 #include <QtCore/QSettings>
 #include <QtCore/QVariantList>
 
+// STRATUM: for stratumProfile-driven RTSP URL auto-selection. AppSettings is
+// constructed by SettingsManager BEFORE VideoSettings (see SettingsManager::init),
+// so it is safe to reach through the manager from our ctor.
+#include "SettingsManager.h"
+#include "AppSettings.h"
+
 QGC_LOGGING_CATEGORY(VideoSettingsLog, "Settings.VideoSettings")
 
 #ifdef QGC_GST_STREAMING
@@ -79,6 +85,27 @@ DECLARE_SETTINGGROUP(Video, "Video")
 
     // Set default value for videoSource
     _setDefaults();
+
+    // STRATUM: profile-driven RTSP URL selection. Watch three sources of change:
+    //   1. AppSettings.stratumProfile -- user picks a profile (or switches later),
+    //      we must re-copy the profile-scoped URL into the active rtspUrl.
+    //   2. daggerRtspUrl edits -- if we're on Dagger, propagate the edit to rtspUrl
+    //      so the change is applied without a restart.
+    //   3. tvRtspUrl edits -- ditto for Dropper's default (TV) feed. irRtspUrl edits
+    //      are only visible after the user re-selects the IR button in
+    //      FlyViewCameraControls, matching the existing TV/IR toggle contract.
+    //
+    // Skip if AppSettings is somehow not yet up (defensive; ordering above should
+    // guarantee it).
+    if (auto *app = SettingsManager::instance()->appSettings()) {
+        connect(app->stratumProfile(), &Fact::rawValueChanged, this, &VideoSettings::_applyStratumProfileToRtsp);
+        connect(daggerRtspUrl(),       &Fact::rawValueChanged, this, &VideoSettings::_applyStratumProfileToRtsp);
+        connect(tvRtspUrl(),           &Fact::rawValueChanged, this, &VideoSettings::_applyStratumProfileToRtsp);
+
+        // Seed on startup. Queued so we run AFTER settings finish loading and the
+        // event loop is up (avoids any surprise reentry during the ctor).
+        QMetaObject::invokeMethod(this, &VideoSettings::_applyStratumProfileToRtsp, Qt::QueuedConnection);
+    }
 }
 
 void VideoSettings::_setDefaults()
@@ -228,6 +255,10 @@ DECLARE_SETTINGSFACT_NO_FUNC(VideoSettings, tcpUrl)
 // so no _configChanged connection is needed here.
 DECLARE_SETTINGSFACT(VideoSettings, tvRtspUrl)
 DECLARE_SETTINGSFACT(VideoSettings, irRtspUrl)
+// STRATUM: stored Dagger single-feed URL. Same "stored not active" contract as tv/ir --
+// the active pipeline URL is rtspUrl. _applyStratumProfileToRtsp() copies this into
+// rtspUrl whenever the Dagger profile is active (see VideoSettings ctor).
+DECLARE_SETTINGSFACT(VideoSettings, daggerRtspUrl)
 
 bool VideoSettings::streamConfigured(void)
 {
@@ -283,6 +314,58 @@ bool VideoSettings::streamConfigured(void)
 void VideoSettings::_configChanged(QVariant)
 {
     emit streamConfiguredChanged(streamConfigured());
+}
+
+// STRATUM: profile-driven RTSP URL selection.
+//
+// Reads AppSettings.stratumProfile and, if the currently active rtspUrl does not match
+// the URL(s) belonging to that profile, overwrites rtspUrl with the profile's default
+// feed. That way the operator only has to type all three URLs once in Application
+// Settings > Video and the UI picks the right one at runtime.
+//
+//   Dagger  (profile == 2):  rtspUrl <- daggerRtspUrl.
+//   Dropper (profile == 1):  rtspUrl <- tvRtspUrl (default). The TV/IR toggle in
+//                            FlyViewCameraControls may then swap it to irRtspUrl;
+//                            we preserve that toggle state by NOT overwriting rtspUrl
+//                            when it already matches either of the Dropper URLs.
+//   Not selected (0):        do nothing -- the profile-selection dialog will fire
+//                            this again after the user picks a profile.
+//
+// Empty stored URLs are ignored (the operator hasn't entered one yet). We also leave
+// videoSource alone; if the operator is on UDP/TCP that's a deliberate choice.
+void VideoSettings::_applyStratumProfileToRtsp()
+{
+    auto *app = SettingsManager::instance()->appSettings();
+    if (!app) {
+        return;
+    }
+
+    const uint32_t profile = app->stratumProfile()->rawValue().toUInt();
+    const QString  active  = rtspUrl()->rawValue().toString();
+    const QString  dagger  = daggerRtspUrl()->rawValue().toString();
+    const QString  tv      = tvRtspUrl()->rawValue().toString();
+    const QString  ir      = irRtspUrl()->rawValue().toString();
+
+    QString target;
+    if (profile == 2) {                                     // Dagger
+        target = dagger;
+    } else if (profile == 1) {                              // Dropper
+        // If the pipeline is already pinned to one of the two Dropper feeds, keep it
+        // (preserves TV/IR toggle state). Otherwise default to TV.
+        if (!tv.isEmpty() && active == tv) return;
+        if (!ir.isEmpty() && active == ir) return;
+        target = tv;
+    } else {
+        // Profile not selected yet -- wait for the dialog.
+        return;
+    }
+
+    if (target.isEmpty() || target == active) {
+        return;
+    }
+
+    qCDebug(VideoSettingsLog) << "STRATUM: rtspUrl <-" << target << "(profile" << profile << ")";
+    rtspUrl()->setRawValue(target);
 }
 
 void VideoSettings::_setForceVideoDecodeList()

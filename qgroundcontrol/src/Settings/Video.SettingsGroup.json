@@ -48,6 +48,15 @@
             "keywords": "rtsp,ir,infrared,thermal,video url,stream url,feed"
         },
         {
+            "name": "daggerRtspUrl",
+            "shortDesc": "RTSP URL for the Dagger single-feed camera.",
+            "longDesc": "Dagger single-feed RTSP url. Selected automatically when the STRATUM profile is Dagger. Example: rtsp://192.168.10.20:8554/cam",
+            "type": "string",
+            "default": "",
+            "label": "Dagger RTSP URL",
+            "keywords": "rtsp,dagger,video url,stream url,feed"
+        },
+        {
             "name": "tcpUrl",
             "shortDesc": "Network address and port for TCP video stream (e.g. 192.168.143.200:3001).",
             "longDesc": "TCP url address and port to bind to for video stream. Example: 192.168.143.200:3001",
