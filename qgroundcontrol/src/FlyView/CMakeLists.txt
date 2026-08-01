@@ -57,8 +57,12 @@ qt_add_qml_module(FlyViewModule
         GuidedActionChangeAltitude.qml
         GuidedActionChangeSpeed.qml
         GuidedActionConfirm.qml
+        GuidedActionHold.qml
+        GuidedActionLand.qml
         GuidedActionPause.qml
+        GuidedActionPnEngage.qml
         GuidedActionRTL.qml
+        GuidedActionStandoffMode.qml
         GuidedActionsController.qml
         GuidedActionTakeoff.qml
         GuidedActionTakeoffDialog.qml
@@ -71,6 +75,8 @@ qt_add_qml_module(FlyViewModule
         ObstacleDistanceOverlayVideo.qml
         OnScreenCameraTrackingController.qml
         OnScreenGimbalController.qml
+        TargetTrackingOverlay.qml
+        TrackerRoiOverlay.qml
         PreFlightBatteryCheck.qml
         PreFlightCheckList.qml
         PreFlightCheckListShowAction.qml
@@ -82,9 +88,11 @@ qt_add_qml_module(FlyViewModule
         ProximityRadarVideoView.qml
         RoverChecklist.qml
         StandoffController.qml
+        StandoffOrbitDialog.qml
         SubChecklist.qml
         TelemetryValuesBar.qml
         TerrainProgress.qml
+        TrackingToggleAction.qml
         VehicleWarnings.qml
         VirtualJoystick.qml
         VTOLChecklist.qml
