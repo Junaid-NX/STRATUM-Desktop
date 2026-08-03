@@ -20,6 +20,8 @@ public:
     DEFINE_SETTINGFACT(tvRtspUrl)
     DEFINE_SETTINGFACT(irRtspUrl)
     DEFINE_SETTINGFACT(daggerRtspUrl)   // STRATUM: Dagger single-feed URL
+    DEFINE_SETTINGFACT(daggerCameraSdkHost) // STRATUM: A2 mini SDK IP
+    DEFINE_SETTINGFACT(daggerCameraSdkPort) // STRATUM: A2 mini SDK UDP port
     DEFINE_SETTINGFACT(aspectRatio)
     DEFINE_SETTINGFACT(videoFit)
     DEFINE_SETTINGFACT(gridLines)

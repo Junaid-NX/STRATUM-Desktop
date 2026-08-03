@@ -59,6 +59,7 @@ public:
     Q_INVOKABLE void stopVideo();
     Q_INVOKABLE bool sendCameraAction(const QString &action);
     Q_INVOKABLE bool sendCameraTrackPoint(int x, int y);
+    Q_INVOKABLE bool sendSiyiCameraAction(const QString &action);
 
     void init(QQuickWindow *mainWindow);
     void startGStreamerInit();

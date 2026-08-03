@@ -230,6 +230,20 @@ Item {
             visible:                _cameraMaximized && _stratumIsDropper
         }
 
+        // STRATUM: Dagger camera-control overlay (SIYI A2 mini, single-axis tilt).
+        // Same slot/behaviour as the Dropper overlay above; only visible for the
+        // Dagger profile. Sends SIYI SDK UDP packets via VideoManager.sendSiyiCameraAction.
+        FlyViewCameraControlsDagger {
+            id:                     videoCameraOverlayDagger
+            overlayMode:            true
+            anchors.right:          parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.rightMargin:    _toolsMargin
+            width:                  ScreenTools.defaultFontPixelWidth * 22
+            z:                      QGroundControl.zOrderWidgets + 1
+            visible:                _cameraMaximized && _stratumIsDagger
+        }
+
         // Development tool for visualizing the insets for a paticular layer, show if needed
         FlyViewInsetViewer {
             id:                     widgetLayerInsetViewer

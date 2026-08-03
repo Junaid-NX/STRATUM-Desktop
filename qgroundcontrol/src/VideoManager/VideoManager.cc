@@ -160,6 +160,95 @@ bool VideoManager::sendCameraTrackPoint(int x, int y)
     return socket.writeDatagram(payload, host, 5000) == payload.size();
 }
 
+// STRATUM: SIYI A2 mini SDK v3 packet builder + UDP sender.
+//
+// Frame layout (little-endian multi-byte fields):
+//   [0..1]   STX     = 0x55, 0x66
+//   [2]      CTRL    = 0x00  (fire-and-forget, no ACK)
+//   [3..4]   DATA_LEN
+//   [5..6]   SEQ     = 0 (SIYI treats this as opaque; we don't track replies here)
+//   [7]      CMD_ID
+//   [8..]    DATA
+//   [tail]   CRC16 (poly 0x1021, init 0x0000, no reflection, no XOR-out;
+//                  i.e. CRC-16/XMODEM) over bytes [0 .. end-of-DATA]
+//
+// A2 mini (single-axis tilt only) commands:
+//   0x08 Center       DATA = { 0x01 }
+//   0x07 Rate         DATA = { int8 yaw_speed, int8 pitch_speed }  (yaw ignored on A2)
+//   0x0C Photo/Rec    DATA = { uint8 func_type }
+//                     0 = take photo, 2 = start/stop record (toggle), 3 = motion-mode cycle
+namespace {
+uint16_t _siyiCrc16(const uint8_t *data, int length)
+{
+    uint16_t crc = 0x0000;
+    for (int i = 0; i < length; ++i) {
+        crc ^= static_cast<uint16_t>(data[i]) << 8;
+        for (int b = 0; b < 8; ++b) {
+            crc = (crc & 0x8000) ? static_cast<uint16_t>((crc << 1) ^ 0x1021)
+                                 : static_cast<uint16_t>(crc << 1);
+        }
+    }
+    return crc;
+}
+
+QByteArray _siyiPacket(uint8_t cmdId, const QByteArray &data)
+{
+    QByteArray p;
+    p.reserve(10 + data.size());
+    p.append(char(0x55)); p.append(char(0x66));
+    p.append(char(0x00));                                       // CTRL: no-ACK
+    p.append(char(data.size() & 0xFF));
+    p.append(char((data.size() >> 8) & 0xFF));
+    p.append(char(0x00)); p.append(char(0x00));                 // SEQ: 0
+    p.append(char(cmdId));
+    p.append(data);
+    const uint16_t crc = _siyiCrc16(reinterpret_cast<const uint8_t*>(p.constData()), p.size());
+    p.append(char(crc & 0xFF));
+    p.append(char((crc >> 8) & 0xFF));
+    return p;
+}
+}
+
+bool VideoManager::sendSiyiCameraAction(const QString &action)
+{
+    const QString a = action.trimmed().toLower();
+    QByteArray packet;
+
+    if (a == QLatin1String("center")) {
+        packet = _siyiPacket(0x08, QByteArray(1, char(0x01)));
+    } else if (a == QLatin1String("pitch-up")) {
+        packet = _siyiPacket(0x07, QByteArray({ char(0),  char(50) }));
+    } else if (a == QLatin1String("pitch-down")) {
+        packet = _siyiPacket(0x07, QByteArray({ char(0),  char(-50) }));
+    } else if (a == QLatin1String("stop")) {
+        packet = _siyiPacket(0x07, QByteArray({ char(0),  char(0) }));
+    } else if (a == QLatin1String("capture")) {
+        packet = _siyiPacket(0x0C, QByteArray(1, char(0x00)));
+    } else if (a == QLatin1String("rec-toggle")) {
+        packet = _siyiPacket(0x0C, QByteArray(1, char(0x02)));
+    } else if (a == QLatin1String("mode-cycle")) {
+        packet = _siyiPacket(0x0C, QByteArray(1, char(0x03)));
+    } else {
+        return false;
+    }
+
+    VideoSettings *vs = SettingsManager::instance()->videoSettings();
+    const QString hostStr = vs ? vs->daggerCameraSdkHost()->rawValue().toString() : QString();
+    const quint16 port    = vs ? static_cast<quint16>(vs->daggerCameraSdkPort()->rawValue().toUInt()) : quint16(0);
+    if (hostStr.isEmpty() || port == 0) {
+        qCWarning(VideoManagerLog) << "SIYI camera action" << a << "skipped: no host/port configured";
+        return false;
+    }
+    const QHostAddress host(hostStr);
+    if (host.isNull()) {
+        qCWarning(VideoManagerLog) << "SIYI camera action" << a << "skipped: invalid host" << hostStr;
+        return false;
+    }
+
+    QUdpSocket socket;
+    return socket.writeDatagram(packet, host, port) == packet.size();
+}
+
 VideoManager *VideoManager::instance()
 {
     return _videoManagerInstance();

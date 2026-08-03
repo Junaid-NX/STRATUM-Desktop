@@ -259,6 +259,10 @@ DECLARE_SETTINGSFACT(VideoSettings, irRtspUrl)
 // the active pipeline URL is rtspUrl. _applyStratumProfileToRtsp() copies this into
 // rtspUrl whenever the Dagger profile is active (see VideoSettings ctor).
 DECLARE_SETTINGSFACT(VideoSettings, daggerRtspUrl)
+// STRATUM: SIYI A2 mini SDK network target for the Dagger camera-control panel.
+// Read by VideoManager::sendSiyiCameraAction each command; edits take effect immediately.
+DECLARE_SETTINGSFACT(VideoSettings, daggerCameraSdkHost)
+DECLARE_SETTINGSFACT(VideoSettings, daggerCameraSdkPort)
 
 bool VideoSettings::streamConfigured(void)
 {

@@ -57,6 +57,26 @@
             "keywords": "rtsp,dagger,video url,stream url,feed"
         },
         {
+            "name": "daggerCameraSdkHost",
+            "shortDesc": "Host or IP the Dagger camera SDK listens on.",
+            "longDesc": "Destination IP for the SIYI A2 mini SDK control channel used by the Dagger camera-control panel. SIYI factory default is 192.168.144.25; enter your airframe's remapped address if it differs.",
+            "type": "string",
+            "default": "192.168.144.25",
+            "label": "Dagger Camera SDK Host",
+            "keywords": "siyi,a2,dagger,camera,sdk,ip,host"
+        },
+        {
+            "name": "daggerCameraSdkPort",
+            "shortDesc": "UDP port the Dagger camera SDK listens on.",
+            "longDesc": "Destination UDP port for the SIYI A2 mini SDK control channel used by the Dagger camera-control panel. SIYI factory default is 37260.",
+            "type": "uint32",
+            "min": 1,
+            "max": 65535,
+            "default": 37260,
+            "label": "Dagger Camera SDK Port",
+            "keywords": "siyi,a2,dagger,camera,sdk,port,udp"
+        },
+        {
             "name": "tcpUrl",
             "shortDesc": "Network address and port for TCP video stream (e.g. 192.168.143.200:3001).",
             "longDesc": "TCP url address and port to bind to for video stream. Example: 192.168.143.200:3001",
