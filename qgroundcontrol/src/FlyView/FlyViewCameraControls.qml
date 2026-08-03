@@ -81,8 +81,21 @@ Item {
 
     function _toggleTrack() {
         _trackActive = !_trackActive
-        if (_send(_trackActive ? "track-center" : "track-stop")) {
-            root.statusMessage(_trackActive ? qsTr("◎ Tracking centre") : qsTr("✕ Tracking off"))
+        if (_trackActive) {
+            // C12 protocol §3.3.4-3.3.5: set the target pixel with GOT, then engage the
+            // tracker with SUM 01 ("Tracking acknowledged"). GOT alone is a mechanical
+            // point-at-pixel command, not a tracker enable.
+            if (_send("track-center") && _send("track-ack")) {
+                root.statusMessage(qsTr("◎ Tracking centre"))
+            } else {
+                _trackActive = false
+            }
+        } else {
+            if (_send("track-stop")) {
+                root.statusMessage(qsTr("✕ Tracking off"))
+            } else {
+                _trackActive = true
+            }
         }
     }
 
