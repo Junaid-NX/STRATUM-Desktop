@@ -157,12 +157,12 @@ bool VideoManager::sendCameraTrackPoint(int x, int y)
     const QByteArray payload = base + QByteArray::number(sum & 0xFF, 16).toUpper().rightJustified(2, '0');
     QUdpSocket socket;
     const QHostAddress host(QStringLiteral("192.168.144.108"));
-    if (socket.writeDatagram(payload, host, 5000) != payload.size()) {
+    // C12 protocol §3.3.4→§3.3.5: SUM 01 arms the tracker, then GOT feeds the target.
+    const QByteArray sumAck = QByteArrayLiteral("#TPUG2wSUM0162");
+    if (socket.writeDatagram(sumAck, host, 5000) != sumAck.size()) {
         return false;
     }
-    // C12 §3.3.4: GOT only sets the target pixel; SUM 01 engages the tracker.
-    const QByteArray sumAck = QByteArrayLiteral("#TPUG2wSUM0162");
-    return socket.writeDatagram(sumAck, host, 5000) == sumAck.size();
+    return socket.writeDatagram(payload, host, 5000) == payload.size();
 }
 
 // STRATUM: SIYI A2 mini SDK v3 packet builder + UDP sender.

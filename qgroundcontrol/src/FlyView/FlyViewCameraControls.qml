@@ -79,17 +79,32 @@ Item {
         }
     }
 
+    // Timer used by _toggleTrack to gap SUM 01 (arm tracker) and GOT (feed target).
+    // Some C12 firmware drops GOT when it arrives back-to-back with SUM 01.
+    Timer {
+        id: _trackFeedTimer
+        interval: 120
+        repeat: false
+        onTriggered: {
+            if (!root._send("track-center")) {
+                root._trackActive = false
+                root.statusMessage(qsTr("Tracking start failed (GOT)"))
+                return
+            }
+            root.statusMessage(qsTr("◎ Tracker armed → target 640,360"))
+        }
+    }
+
     function _toggleTrack() {
         _trackActive = !_trackActive
         if (_trackActive) {
-            // C12 protocol §3.3.4-3.3.5: set the target pixel with GOT, then engage the
-            // tracker with SUM 01 ("Tracking acknowledged"). GOT alone is a mechanical
-            // point-at-pixel command, not a tracker enable.
-            if (_send("track-center") && _send("track-ack")) {
-                root.statusMessage(qsTr("◎ Tracking centre"))
-            } else {
+            // C12 protocol §3.3.4→§3.3.5 order: SUM 01 arms tracker mode ("Tracking
+            // acknowledged"), then GOT feeds the target pixel on the 1280×720 frame.
+            if (!_send("track-ack")) {
                 _trackActive = false
+                return
             }
+            _trackFeedTimer.restart()
         } else {
             if (_send("track-stop")) {
                 root.statusMessage(qsTr("✕ Tracking off"))
