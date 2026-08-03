@@ -21,9 +21,10 @@ Item {
     readonly property bool _is3DMode:       QGCViewer3DManager.displayMode === QGCViewer3DManager.View3D
     readonly property bool _keepSceneAlive: QGroundControl.settingsManager.viewer3DSettings.keepSceneAlive.rawValue
 
-    // STRATUM: active vehicle profile (1 = Dropper, 2 = Dagger). Gates Dropper-only UI
-    // such as the on-video camera-control overlay.
+    // STRATUM: active vehicle profile (1 = Dropper, 2 = Dagger). Gates profile-specific UI
+    // such as the on-video camera-control overlays.
     readonly property bool _stratumIsDropper: QGroundControl.settingsManager.appSettings.stratumProfile.rawValue === 1
+    readonly property bool _stratumIsDagger:  QGroundControl.settingsManager.appSettings.stratumProfile.rawValue === 2
 
     // These should only be used by MainRootWindow
     property var planController:    _planController

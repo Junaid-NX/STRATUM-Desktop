@@ -6,7 +6,10 @@
         "autoStreamConfig": "QGroundControl.videoManager.autoStreamConfigured",
         "sourceDisabled": "videoSource === QGroundControl.settingsManager.videoSettings.disabledVideoSource",
         "isStreamSource": "QGroundControl.videoManager.isStreamSource",
-        "isGST": "QGroundControl.videoManager.gstreamerEnabled"
+        "isGST": "QGroundControl.videoManager.gstreamerEnabled",
+        "stratumProfile": "QGroundControl.settingsManager.appSettings.stratumProfile.rawValue",
+        "isDropperProfile": "stratumProfile === 1",
+        "isDaggerProfile": "stratumProfile === 2"
     },
     "groups": [
         {
@@ -36,6 +39,10 @@
                 },
                 {
                     "setting": "videoSettings.irRtspUrl",
+                    "showWhen": "videoSource === QGroundControl.settingsManager.videoSettings.rtspVideoSource"
+                },
+                {
+                    "setting": "videoSettings.daggerRtspUrl",
                     "showWhen": "videoSource === QGroundControl.settingsManager.videoSettings.rtspVideoSource"
                 },
                 {
@@ -87,6 +94,19 @@
                 {
                     "setting": "videoSettings.maxVideoSize",
                     "enableWhen": "QGroundControl.settingsManager.videoSettings.enableStorageLimit.rawValue"
+                }
+            ]
+        },
+        {
+            "heading": "Dagger Camera Control (SIYI A2 mini)",
+            "keywords": ["dagger", "siyi", "a2 mini", "gimbal", "sdk"],
+            "showWhen": "isDaggerProfile",
+            "controls": [
+                {
+                    "setting": "videoSettings.daggerCameraSdkHost"
+                },
+                {
+                    "setting": "videoSettings.daggerCameraSdkPort"
                 }
             ]
         }
