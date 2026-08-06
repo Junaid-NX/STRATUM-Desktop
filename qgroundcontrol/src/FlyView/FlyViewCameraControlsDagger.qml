@@ -47,25 +47,55 @@ Item {
         }
     }
 
-    // Hold-to-move pitch button: fires the rate command while held (200 ms repeat) and
-    // sends "stop" on release, mirroring the Dropper PtzButton pattern.
-    component PtzButton : QGCButton {
+    // Sends stop 3x back-to-back to defend against dropped UDP packets — the SIYI
+    // rate command latches; if the stop is lost the gimbal keeps slewing.
+    function _sendStop() {
+        _send("stop"); _send("stop"); _send("stop")
+    }
+
+    // Reliable hold-to-move pitch button. Uses MouseArea directly (QGCButton's
+    // onPressedChanged fires unreliably for quick taps) and drives a 150 ms repeat
+    // timer while held. Multiplies the stop packet on release to survive UDP loss.
+    component PtzButton : Rectangle {
         id: ptzButton
         property string ptzAction
+        property string label
         implicitHeight: root._btnHeight
         Layout.fillWidth: true
-        onPressedChanged: {
-            if (pressed) {
-                root._send(ptzAction)
+        color: mouseArea.pressed ? root._accentDim
+                                 : (mouseArea.containsMouse ? Qt.rgba(0.24, 1.0, 0.65, 0.18)
+                                                            : Qt.rgba(1, 1, 1, 0.08))
+        radius: ScreenTools.defaultBorderRadius
+        border.color: root._accent
+        border.width: 1
+        QGCLabel {
+            anchors.centerIn: parent
+            text: ptzButton.label
+            color: "white"
+            font.bold: true
+        }
+        MouseArea {
+            id: mouseArea
+            anchors.fill: parent
+            hoverEnabled: true
+            onPressed: {
+                if (root._send(ptzButton.ptzAction)) {
+                    root.statusMessage(qsTr("→ %1").arg(ptzButton.ptzAction))
+                }
                 ptzHoldTimer.restart()
-            } else {
+            }
+            onReleased: {
                 ptzHoldTimer.stop()
-                root._send("stop")
+                root._sendStop()
+            }
+            onCanceled: {
+                ptzHoldTimer.stop()
+                root._sendStop()
             }
         }
         Timer {
             id: ptzHoldTimer
-            interval: 200
+            interval: 150
             repeat: true
             onTriggered: root._send(ptzButton.ptzAction)
         }
@@ -96,14 +126,18 @@ Item {
         }
 
         // ---- Pitch (single-axis) --------------------------------------
-        PtzButton { text: qsTr("▲  Pitch Up");   ptzAction: "pitch-up" }
+        PtzButton { label: qsTr("▲  Pitch Up");   ptzAction: "pitch-up" }
         QGCButton {
             text: qsTr("⊙  Center")
             implicitHeight: root._btnHeight
             Layout.fillWidth: true
-            onClicked: { if (root._send("center")) root.statusMessage(qsTr("Gimbal centred")) }
+            onClicked: {
+                // Cancel any latched rate before centering, then command return-to-home.
+                root._sendStop()
+                if (root._send("center")) root.statusMessage(qsTr("Gimbal centred"))
+            }
         }
-        PtzButton { text: qsTr("▼  Pitch Down"); ptzAction: "pitch-down" }
+        PtzButton { label: qsTr("▼  Pitch Down"); ptzAction: "pitch-down" }
 
         Item { Layout.preferredHeight: root._spacing }
 

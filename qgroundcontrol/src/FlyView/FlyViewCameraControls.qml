@@ -25,15 +25,21 @@ Item {
     property bool overlayMode: false
     // compact: tighter spacing / fonts for the picture-in-picture / panel context.
     property bool compact: false
+    // daggerMode: when true (Dagger airframe with C12), TV/IR toggle drives the
+    // daggerC12TvRtspUrl / daggerC12IrRtspUrl settings instead of tvRtspUrl / irRtspUrl.
+    property bool daggerMode: false
 
     // Emitted after every command so the host (dropper panel / overlay) can show feedback.
     signal statusMessage(string text)
 
     readonly property var _vs: QGroundControl.settingsManager.videoSettings
+    // Profile-scoped URL pair. Kept as readonly properties so QML change-tracking follows
+    // the daggerMode flag automatically.
+    readonly property string _tvUrl: daggerMode ? _vs.daggerC12TvRtspUrl.rawValue : _vs.tvRtspUrl.rawValue
+    readonly property string _irUrl: daggerMode ? _vs.daggerC12IrRtspUrl.rawValue : _vs.irRtspUrl.rawValue
     // Active feed is derived from which stored URL the live rtspUrl currently matches,
     // so the dropper panel and the video overlay always show the same TV/IR state.
-    readonly property bool _feedIrActive: _vs.irRtspUrl.rawValue !== "" &&
-                                          _vs.rtspUrl.rawValue === _vs.irRtspUrl.rawValue
+    readonly property bool _feedIrActive: _irUrl !== "" && _vs.rtspUrl.rawValue === _irUrl
     property bool _recActive:    false
     property bool _trackActive:  false
 
@@ -57,7 +63,7 @@ Item {
     }
 
     function _selectFeed(feed) {
-        const url = (feed === "IR") ? _vs.irRtspUrl.rawValue : _vs.tvRtspUrl.rawValue
+        const url = (feed === "IR") ? _irUrl : _tvUrl
         if (!url) {
             root.statusMessage(qsTr("No %1 URL set — configure it in Application Settings ▸ Video").arg(feed))
             return

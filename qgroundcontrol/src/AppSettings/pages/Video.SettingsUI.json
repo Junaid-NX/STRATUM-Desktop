@@ -46,6 +46,14 @@
                     "showWhen": "videoSource === QGroundControl.settingsManager.videoSettings.rtspVideoSource"
                 },
                 {
+                    "setting": "videoSettings.daggerC12TvRtspUrl",
+                    "showWhen": "videoSource === QGroundControl.settingsManager.videoSettings.rtspVideoSource"
+                },
+                {
+                    "setting": "videoSettings.daggerC12IrRtspUrl",
+                    "showWhen": "videoSource === QGroundControl.settingsManager.videoSettings.rtspVideoSource"
+                },
+                {
                     "setting": "videoSettings.tcpUrl",
                     "showWhen": "videoSource === QGroundControl.settingsManager.videoSettings.tcpVideoSource"
                 },
@@ -99,9 +107,12 @@
         },
         {
             "heading": "Dagger Camera Control (SIYI A2 mini)",
-            "keywords": ["dagger", "siyi", "a2 mini", "gimbal", "sdk"],
+            "keywords": ["dagger", "siyi", "a2 mini", "gimbal", "sdk", "camera"],
             "showWhen": "isDaggerProfile",
             "controls": [
+                {
+                    "setting": "videoSettings.daggerCamera"
+                },
                 {
                     "setting": "videoSettings.daggerCameraSdkHost"
                 },

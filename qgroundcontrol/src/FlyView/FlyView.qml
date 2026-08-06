@@ -231,16 +231,15 @@ Item {
             visible:                _cameraMaximized && _stratumIsDropper
         }
 
-        // STRATUM: Dagger camera-control overlay (SIYI A2 mini, single-axis tilt).
-        // Same slot/behaviour as the Dropper overlay above; only visible for the
-        // Dagger profile. Sends SIYI SDK UDP packets via VideoManager.sendSiyiCameraAction.
-        FlyViewCameraControlsDagger {
+        // STRATUM: Dagger camera-control overlay. Wraps a segmented A2 mini / C12
+        // selector; the selected camera drives both the RTSP feed and the control cluster.
+        FlyViewCameraControlsDaggerRoot {
             id:                     videoCameraOverlayDagger
             overlayMode:            true
             anchors.right:          parent.right
             anchors.verticalCenter: parent.verticalCenter
             anchors.rightMargin:    _toolsMargin
-            width:                  ScreenTools.defaultFontPixelWidth * 22
+            width:                  ScreenTools.defaultFontPixelWidth * 24
             z:                      QGroundControl.zOrderWidgets + 1
             visible:                _cameraMaximized && _stratumIsDagger
         }

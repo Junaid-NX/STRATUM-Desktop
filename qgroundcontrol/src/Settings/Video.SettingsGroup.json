@@ -49,12 +49,41 @@
         },
         {
             "name": "daggerRtspUrl",
-            "shortDesc": "RTSP URL for the Dagger single-feed camera.",
-            "longDesc": "Dagger single-feed RTSP url. Selected automatically when the STRATUM profile is Dagger. Example: rtsp://192.168.10.20:8554/cam",
+            "shortDesc": "RTSP URL for the Dagger A2 mini camera feed.",
+            "longDesc": "Dagger A2 mini RTSP url. Selected automatically when the STRATUM profile is Dagger and the camera type is A2 mini. Example: rtsp://192.168.144.25:8554/main.264",
             "type": "string",
             "default": "",
-            "label": "Dagger RTSP URL",
-            "keywords": "rtsp,dagger,video url,stream url,feed"
+            "label": "Dagger A2 mini RTSP URL",
+            "keywords": "rtsp,dagger,a2,siyi,video url,stream url,feed"
+        },
+        {
+            "name": "daggerC12TvRtspUrl",
+            "shortDesc": "RTSP URL for the Dagger C12 (TV) camera feed.",
+            "longDesc": "Dagger C12 dual-optical TV feed. Selected automatically when the STRATUM profile is Dagger and the camera type is C12. Example: rtsp://192.168.144.108:554/stream=0",
+            "type": "string",
+            "default": "",
+            "label": "Dagger C12 TV RTSP URL",
+            "keywords": "rtsp,dagger,c12,tv,video url,stream url,feed"
+        },
+        {
+            "name": "daggerC12IrRtspUrl",
+            "shortDesc": "RTSP URL for the Dagger C12 (IR) camera feed.",
+            "longDesc": "Dagger C12 dual-optical IR feed. Selected by the IR toggle when the STRATUM profile is Dagger and the camera type is C12. Example: rtsp://192.168.144.108:555/stream=1",
+            "type": "string",
+            "default": "",
+            "label": "Dagger C12 IR RTSP URL",
+            "keywords": "rtsp,dagger,c12,ir,infrared,thermal,video url,stream url,feed"
+        },
+        {
+            "name": "daggerCamera",
+            "shortDesc": "Active camera on the Dagger airframe.",
+            "longDesc": "Selects which camera is mounted on the Dagger airframe. The Dagger camera-control panel and the active RTSP feed switch to match.",
+            "type": "uint32",
+            "enumStrings": "A2 mini,C12",
+            "enumValues": "0,1",
+            "default": 0,
+            "label": "Dagger Camera",
+            "keywords": "dagger,camera,a2,c12"
         },
         {
             "name": "daggerCameraSdkHost",

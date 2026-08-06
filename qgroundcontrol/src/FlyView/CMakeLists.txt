@@ -10,9 +10,11 @@ qt_add_qml_module(FlyViewModule
     VERSION 1.0
     RESOURCE_PREFIX /qml
     QML_FILES
+        ConnectPodAction.qml
         CustomGuidedActionsController.qml
         DefaultChecklist.qml
         EngageAction.qml
+        FetchTargetAction.qml
         EngageDialog.qml
         EngagementAbortOverlay.qml
         EngagementController.qml
@@ -36,6 +38,7 @@ qt_add_qml_module(FlyViewModule
         FlyViewCustomLayer.qml
         FlyViewCameraControls.qml
         FlyViewCameraControlsDagger.qml
+        FlyViewCameraControlsDaggerRoot.qml
         FlyViewDropperAction.qml
         FlyViewDropperPanel.qml
         FlyViewInsetViewer.qml
@@ -116,4 +119,5 @@ qt_add_resources(FlyViewModule flyview_qmlimages
     BASE "${CMAKE_SOURCE_DIR}/resources"
     FILES
         "${CMAKE_SOURCE_DIR}/resources/check.svg"
+        "${CMAKE_SOURCE_DIR}/resources/TargetLocation.svg"
 )

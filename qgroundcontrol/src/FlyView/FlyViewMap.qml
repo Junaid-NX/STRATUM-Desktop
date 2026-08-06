@@ -893,6 +893,44 @@ FlightMap {
         markerLabel:    qsTr("Target")
     }
 
+    // STRATUM: XC25 fetched-target marker. Plotted on demand by the "Fetch Target"
+    // tool-strip button (QGroundControl.targetFetch). A red reticle centred exactly
+    // on the target coordinate; scales gently with map zoom.
+    MapQuickItem {
+        id:             xc25TargetMarker
+        coordinate:     QGroundControl.targetFetch.targetCoordinate
+        visible:        QGroundControl.targetFetch.targetValid && QGroundControl.targetFetch.targetCoordinate.isValid
+        anchorPoint.x:  sourceItem.width  / 2
+        anchorPoint.y:  sourceItem.height / 2
+        z:              QGroundControl.zOrderMapItems + 2
+
+        property real _zoomScale: Math.max(0.7, Math.min(1.8, Math.pow(1.25, _root.zoomLevel - 16)))
+        property real _size:      ScreenTools.defaultFontPixelHeight * 2.6 * _zoomScale
+
+        sourceItem: Item {
+            width:  xc25TargetMarker._size
+            height: xc25TargetMarker._size
+
+            Image {
+                anchors.fill:       parent
+                source:             "/qmlimages/TargetLocation.svg"
+                sourceSize.width:   width * 2
+                fillMode:           Image.PreserveAspectFit
+                mipmap:             true
+                smooth:             true
+            }
+
+            QGCMapLabel {
+                anchors.bottom:             parent.top
+                anchors.bottomMargin:       ScreenTools.defaultFontPixelHeight * 0.1
+                anchors.horizontalCenter:   parent.horizontalCenter
+                map:                        _root
+                text:                       qsTr("XC25 Target")
+                font.pointSize:             ScreenTools.smallFontPointSize
+            }
+        }
+    }
+
     QGCPopupDialogFactory {
         id: roiEditPositionDialogFactory
 

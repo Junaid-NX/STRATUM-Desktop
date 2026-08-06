@@ -222,11 +222,11 @@ bool VideoManager::sendSiyiCameraAction(const QString &action)
     if (a == QLatin1String("center")) {
         packet = _siyiPacket(0x08, QByteArray(1, char(0x01)));
     } else if (a == QLatin1String("pitch-up")) {
-        packet = _siyiPacket(0x07, QByteArray({ char(0),  char(50) }));
+        packet = _siyiPacket(0x07, QByteArray({ char(0), static_cast<char>(int8_t(50)) }));
     } else if (a == QLatin1String("pitch-down")) {
-        packet = _siyiPacket(0x07, QByteArray({ char(0),  char(-50) }));
+        packet = _siyiPacket(0x07, QByteArray({ char(0), static_cast<char>(int8_t(-50)) }));
     } else if (a == QLatin1String("stop")) {
-        packet = _siyiPacket(0x07, QByteArray({ char(0),  char(0) }));
+        packet = _siyiPacket(0x07, QByteArray({ char(0), char(0) }));
     } else if (a == QLatin1String("capture")) {
         packet = _siyiPacket(0x0C, QByteArray(1, char(0x00)));
     } else if (a == QLatin1String("rec-toggle")) {

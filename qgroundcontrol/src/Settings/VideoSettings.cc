@@ -98,9 +98,12 @@ DECLARE_SETTINGGROUP(Video, "Video")
     // Skip if AppSettings is somehow not yet up (defensive; ordering above should
     // guarantee it).
     if (auto *app = SettingsManager::instance()->appSettings()) {
-        connect(app->stratumProfile(), &Fact::rawValueChanged, this, &VideoSettings::_applyStratumProfileToRtsp);
-        connect(daggerRtspUrl(),       &Fact::rawValueChanged, this, &VideoSettings::_applyStratumProfileToRtsp);
-        connect(tvRtspUrl(),           &Fact::rawValueChanged, this, &VideoSettings::_applyStratumProfileToRtsp);
+        connect(app->stratumProfile(),  &Fact::rawValueChanged, this, &VideoSettings::_applyStratumProfileToRtsp);
+        connect(daggerRtspUrl(),        &Fact::rawValueChanged, this, &VideoSettings::_applyStratumProfileToRtsp);
+        connect(daggerC12TvRtspUrl(),   &Fact::rawValueChanged, this, &VideoSettings::_applyStratumProfileToRtsp);
+        connect(daggerC12IrRtspUrl(),   &Fact::rawValueChanged, this, &VideoSettings::_applyStratumProfileToRtsp);
+        connect(daggerCamera(),         &Fact::rawValueChanged, this, &VideoSettings::_applyStratumProfileToRtsp);
+        connect(tvRtspUrl(),            &Fact::rawValueChanged, this, &VideoSettings::_applyStratumProfileToRtsp);
 
         // Seed on startup. Queued so we run AFTER settings finish loading and the
         // event loop is up (avoids any surprise reentry during the ctor).
@@ -255,10 +258,15 @@ DECLARE_SETTINGSFACT_NO_FUNC(VideoSettings, tcpUrl)
 // so no _configChanged connection is needed here.
 DECLARE_SETTINGSFACT(VideoSettings, tvRtspUrl)
 DECLARE_SETTINGSFACT(VideoSettings, irRtspUrl)
-// STRATUM: stored Dagger single-feed URL. Same "stored not active" contract as tv/ir --
-// the active pipeline URL is rtspUrl. _applyStratumProfileToRtsp() copies this into
-// rtspUrl whenever the Dagger profile is active (see VideoSettings ctor).
-DECLARE_SETTINGSFACT(VideoSettings, daggerRtspUrl)
+// STRATUM: stored Dagger camera feeds. Contract matches tvRtspUrl/irRtspUrl -- the
+// URL is stored but the active pipeline is rtspUrl. _applyStratumProfileToRtsp copies
+// the right one into rtspUrl based on the Dagger profile + daggerCamera selection.
+DECLARE_SETTINGSFACT(VideoSettings, daggerRtspUrl)        // A2 mini feed
+DECLARE_SETTINGSFACT(VideoSettings, daggerC12TvRtspUrl)   // C12 TV feed
+DECLARE_SETTINGSFACT(VideoSettings, daggerC12IrRtspUrl)   // C12 IR feed
+// STRATUM: 0 = A2 mini, 1 = C12. Selecting a camera swaps the active RTSP URL to the
+// matching stored feed and the Dagger camera-control panel changes its control cluster.
+DECLARE_SETTINGSFACT(VideoSettings, daggerCamera)
 // STRATUM: SIYI A2 mini SDK network target for the Dagger camera-control panel.
 // Read by VideoManager::sendSiyiCameraAction each command; edits take effect immediately.
 DECLARE_SETTINGSFACT(VideoSettings, daggerCameraSdkHost)
@@ -327,7 +335,10 @@ void VideoSettings::_configChanged(QVariant)
 // feed. That way the operator only has to type all three URLs once in Application
 // Settings > Video and the UI picks the right one at runtime.
 //
-//   Dagger  (profile == 2):  rtspUrl <- daggerRtspUrl.
+//   Dagger  (profile == 2):  rtspUrl depends on daggerCamera:
+//                              0 (A2 mini) -> daggerRtspUrl
+//                              1 (C12)     -> daggerC12TvRtspUrl (default TV);
+//                                             preserve TV/IR toggle if already on IR.
 //   Dropper (profile == 1):  rtspUrl <- tvRtspUrl (default). The TV/IR toggle in
 //                            FlyViewCameraControls may then swap it to irRtspUrl;
 //                            we preserve that toggle state by NOT overwriting rtspUrl
@@ -344,15 +355,25 @@ void VideoSettings::_applyStratumProfileToRtsp()
         return;
     }
 
-    const uint32_t profile = app->stratumProfile()->rawValue().toUInt();
-    const QString  active  = rtspUrl()->rawValue().toString();
-    const QString  dagger  = daggerRtspUrl()->rawValue().toString();
-    const QString  tv      = tvRtspUrl()->rawValue().toString();
-    const QString  ir      = irRtspUrl()->rawValue().toString();
+    const uint32_t profile     = app->stratumProfile()->rawValue().toUInt();
+    const QString  active      = rtspUrl()->rawValue().toString();
+    const QString  a2Feed      = daggerRtspUrl()->rawValue().toString();
+    const QString  c12Tv       = daggerC12TvRtspUrl()->rawValue().toString();
+    const QString  c12Ir       = daggerC12IrRtspUrl()->rawValue().toString();
+    const QString  tv          = tvRtspUrl()->rawValue().toString();
+    const QString  ir          = irRtspUrl()->rawValue().toString();
+    const uint32_t daggerCam   = daggerCamera()->rawValue().toUInt();
 
     QString target;
     if (profile == 2) {                                     // Dagger
-        target = dagger;
+        if (daggerCam == 1) {                               // C12 selected
+            // Keep active if it's already one of the two C12 feeds (preserves TV/IR).
+            if (!c12Tv.isEmpty() && active == c12Tv) return;
+            if (!c12Ir.isEmpty() && active == c12Ir) return;
+            target = c12Tv;
+        } else {                                            // A2 mini selected
+            target = a2Feed;
+        }
     } else if (profile == 1) {                              // Dropper
         // If the pipeline is already pinned to one of the two Dropper feeds, keep it
         // (preserves TV/IR toggle state). Otherwise default to TV.
@@ -368,7 +389,8 @@ void VideoSettings::_applyStratumProfileToRtsp()
         return;
     }
 
-    qCDebug(VideoSettingsLog) << "STRATUM: rtspUrl <-" << target << "(profile" << profile << ")";
+    qCDebug(VideoSettingsLog) << "STRATUM: rtspUrl <-" << target
+                              << "(profile" << profile << ", daggerCamera" << daggerCam << ")";
     rtspUrl()->setRawValue(target);
 }
 
