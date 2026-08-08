@@ -47,15 +47,32 @@ Item {
         }
     }
 
-    // Sends stop 3x back-to-back to defend against dropped UDP packets — the SIYI
-    // rate command latches; if the stop is lost the gimbal keeps slewing.
+    // Sends stop repeatedly to defend against dropped UDP packets — the SIYI rate
+    // command latches; if all stops are lost the gimbal keeps slewing. The C++ side
+    // fires 5 back-to-back UDP writes per "stop" call.
     function _sendStop() {
-        _send("stop"); _send("stop"); _send("stop")
+        _send("stop")
     }
 
-    // Reliable hold-to-move pitch button. Uses MouseArea directly (QGCButton's
-    // onPressedChanged fires unreliably for quick taps) and drives a 150 ms repeat
-    // timer while held. Multiplies the stop packet on release to survive UDP loss.
+    // Fires a burst of stops on release. Runs for ~250 ms after the button is released
+    // so a single lost packet at release time cannot leave the gimbal latched.
+    Timer {
+        id: safetyStopTimer
+        interval: 50
+        repeat: true
+        property int _ticks: 0
+        onTriggered: {
+            root._send("stop")
+            if (++_ticks >= 5) { stop(); _ticks = 0 }
+        }
+        function kick() { _ticks = 0; restart() }
+    }
+
+    // Reliable hold-to-move pitch button. Uses MouseArea + a Timer that is bound to
+    // mouseArea.pressed so it stops the instant the user releases (or the mouse leaves,
+    // or the app loses focus). On release the safety-stop timer sprays extra stops to
+    // survive UDP loss. Sending a stop BEFORE the direction defeats any latched rate
+    // in the opposite direction that may not have been cleared yet.
     component PtzButton : Rectangle {
         id: ptzButton
         property string ptzAction
@@ -79,24 +96,19 @@ Item {
             anchors.fill: parent
             hoverEnabled: true
             onPressed: {
+                safetyStopTimer.stop()
+                root._send("stop")                              // clear any latched rate
                 if (root._send(ptzButton.ptzAction)) {
                     root.statusMessage(qsTr("→ %1").arg(ptzButton.ptzAction))
                 }
-                ptzHoldTimer.restart()
             }
-            onReleased: {
-                ptzHoldTimer.stop()
-                root._sendStop()
-            }
-            onCanceled: {
-                ptzHoldTimer.stop()
-                root._sendStop()
-            }
+            onReleased:  safetyStopTimer.kick()
+            onCanceled:  safetyStopTimer.kick()
         }
         Timer {
-            id: ptzHoldTimer
-            interval: 150
+            interval: 120
             repeat: true
+            running: mouseArea.pressed
             onTriggered: root._send(ptzButton.ptzAction)
         }
     }
@@ -132,9 +144,11 @@ Item {
             implicitHeight: root._btnHeight
             Layout.fillWidth: true
             onClicked: {
-                // Cancel any latched rate before centering, then command return-to-home.
-                root._sendStop()
+                // Cancel any latched rate before centering, then command return-to-home,
+                // then run the safety-stop burst so a stray rate cannot resume after.
+                root._send("stop")
                 if (root._send("center")) root.statusMessage(qsTr("Gimbal centred"))
+                safetyStopTimer.kick()
             }
         }
         PtzButton { label: qsTr("▼  Pitch Down"); ptzAction: "pitch-down" }

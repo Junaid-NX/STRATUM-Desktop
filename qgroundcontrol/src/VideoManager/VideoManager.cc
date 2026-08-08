@@ -218,6 +218,7 @@ bool VideoManager::sendSiyiCameraAction(const QString &action)
 {
     const QString a = action.trimmed().toLower();
     QByteArray packet;
+    int repeat = 1;
 
     if (a == QLatin1String("center")) {
         packet = _siyiPacket(0x08, QByteArray(1, char(0x01)));
@@ -227,6 +228,7 @@ bool VideoManager::sendSiyiCameraAction(const QString &action)
         packet = _siyiPacket(0x07, QByteArray({ char(0), static_cast<char>(int8_t(-50)) }));
     } else if (a == QLatin1String("stop")) {
         packet = _siyiPacket(0x07, QByteArray({ char(0), char(0) }));
+        repeat = 5;                                           // survive UDP loss
     } else if (a == QLatin1String("capture")) {
         packet = _siyiPacket(0x0C, QByteArray(1, char(0x00)));
     } else if (a == QLatin1String("rec-toggle")) {
@@ -251,7 +253,11 @@ bool VideoManager::sendSiyiCameraAction(const QString &action)
     }
 
     QUdpSocket socket;
-    return socket.writeDatagram(packet, host, port) == packet.size();
+    bool ok = true;
+    for (int i = 0; i < repeat; ++i) {
+        ok = (socket.writeDatagram(packet, host, port) == packet.size()) && ok;
+    }
+    return ok;
 }
 
 VideoManager *VideoManager::instance()
