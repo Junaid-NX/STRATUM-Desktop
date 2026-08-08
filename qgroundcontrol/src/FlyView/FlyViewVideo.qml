@@ -82,28 +82,22 @@ Item {
         videoHeight:             videoStreaming.getHeight()
     }
 
-    //-- STRATUM: active vehicle profile (2 = Dagger). Gates the target-designation and
-    //   tracker-ROI overlays, which drive NEXAM messages only meaningful on the Dagger
-    //   airframe (strike/targeting companion).
-    readonly property bool _stratumIsDagger: QGroundControl.settingsManager.appSettings.stratumProfile.rawValue === 2
-
     //-- STRATUM: operator visual target designation. Sends NEXAM_TARGET_SELECT on
     //   click/drag and renders the tracked box streamed back by the companion. Works
     //   without a MAVLink camera (the tracker lives on the companion computer).
-    //   Dagger-only.
+    //   Left unconditional (matches Dagger_main): NEXAM_TARGET_SELECT is a custom
+    //   message id, so non-Dagger autopilots silently ignore it.
     TargetTrackingOverlay {
         id:                      targetTrackingOverlay
         anchors.fill:            parent
         vehicle:                 QGroundControl.multiVehicleManager.activeVehicle
         videoWidth:              videoStreaming.getWidth()
         videoHeight:             videoStreaming.getHeight()
-        visible:                 _root._stratumIsDagger
-        enabled:                 _root._stratumIsDagger
     }
 
     //-- STRATUM: tracker ROI-scoping overlay. Draws the outer ROI box the companion
     //   tracker searches within and exposes a single diagonal-fraction control that
-    //   calls Vehicle::setTrackerRoi (NEXAM_TRACKER_CONFIG / 42005). Dagger-only.
+    //   calls Vehicle::setTrackerRoi (NEXAM_TRACKER_CONFIG / 42005).
     TrackerRoiOverlay {
         id:                      trackerRoiOverlay
         anchors.fill:            parent
@@ -114,8 +108,6 @@ Item {
         vehicle:                 QGroundControl.multiVehicleManager.activeVehicle
         videoWidth:              videoStreaming.getWidth()
         videoHeight:             videoStreaming.getHeight()
-        visible:                 _root._stratumIsDagger
-        enabled:                 _root._stratumIsDagger
     }
 
     MouseArea {
@@ -141,16 +133,12 @@ Item {
                 _dragging = true
                 onScreenGimbalController.mouseDragStart(_pressX, _pressY)
                 cameraTrackingController.mouseDragStart(_pressX, _pressY)
-                if (_root._stratumIsDagger) {
-                    targetTrackingOverlay.mouseDragStart(_pressX, _pressY)
-                }
+                targetTrackingOverlay.mouseDragStart(_pressX, _pressY)
             }
             if (_dragging) {
                 onScreenGimbalController.mouseDragPositionChanged(mouse.x, mouse.y)
                 cameraTrackingController.mouseDragPositionChanged(mouse.x, mouse.y)
-                if (_root._stratumIsDagger) {
-                    targetTrackingOverlay.mouseDragPositionChanged(mouse.x, mouse.y)
-                }
+                targetTrackingOverlay.mouseDragPositionChanged(mouse.x, mouse.y)
             }
         }
 
@@ -158,15 +146,11 @@ Item {
             if (_dragging) {
                 onScreenGimbalController.mouseDragEnd()
                 cameraTrackingController.mouseDragEnd(mouse.x, mouse.y)
-                if (_root._stratumIsDagger) {
-                    targetTrackingOverlay.mouseDragEnd(mouse.x, mouse.y)
-                }
+                targetTrackingOverlay.mouseDragEnd(mouse.x, mouse.y)
             } else {
                 onScreenGimbalController.mouseClicked(mouse.x, mouse.y)
                 cameraTrackingController.mouseClicked(mouse.x, mouse.y)
-                if (_root._stratumIsDagger) {
-                    targetTrackingOverlay.mouseClicked(mouse.x, mouse.y)
-                }
+                targetTrackingOverlay.mouseClicked(mouse.x, mouse.y)
             }
             _dragging = false
         }
