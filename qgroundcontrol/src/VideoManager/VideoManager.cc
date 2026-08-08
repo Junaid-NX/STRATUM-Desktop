@@ -39,6 +39,8 @@
 #include <QtQuick/QQuickItem>
 #include <QtQuick/QQuickWindow>
 
+#include <atomic>
+
 QGC_LOGGING_CATEGORY(VideoManagerLog, "Video.VideoManager")
 
 static constexpr const char *kFileExtension[VideoReceiver::FILE_FORMAT_MAX + 1] = {
@@ -169,9 +171,10 @@ bool VideoManager::sendCameraTrackPoint(int x, int y)
 //
 // Frame layout (little-endian multi-byte fields):
 //   [0..1]   STX     = 0x55, 0x66
-//   [2]      CTRL    = 0x00  (fire-and-forget, no ACK)
+//   [2]      CTRL    = 0x01  (need-ACK; matches the reference SIYI SDK. Some A2 mini
+//                             firmware silently drops CTRL=0x00 command frames.)
 //   [3..4]   DATA_LEN
-//   [5..6]   SEQ     = 0 (SIYI treats this as opaque; we don't track replies here)
+//   [5..6]   SEQ     = monotonic per-process counter (little-endian)
 //   [7]      CMD_ID
 //   [8..]    DATA
 //   [tail]   CRC16 (poly 0x1021, init 0x0000, no reflection, no XOR-out;
@@ -179,9 +182,10 @@ bool VideoManager::sendCameraTrackPoint(int x, int y)
 //
 // A2 mini (single-axis tilt only) commands:
 //   0x08 Center       DATA = { 0x01 }
-//   0x07 Rate         DATA = { int8 yaw_speed, int8 pitch_speed }  (yaw ignored on A2)
+//   0x07 Rate         DATA = { int8 yaw_speed, int8 pitch_speed }  (+pitch = UP)
 //   0x0C Photo/Rec    DATA = { uint8 func_type }
-//                     0 = take photo, 2 = start/stop record (toggle), 3 = motion-mode cycle
+//                     0 = take photo, 2 = start/stop record (toggle),
+//                     3 = Lock mode, 4 = Follow mode, 5 = FPV mode
 namespace {
 uint16_t _siyiCrc16(const uint8_t *data, int length)
 {
@@ -196,15 +200,16 @@ uint16_t _siyiCrc16(const uint8_t *data, int length)
     return crc;
 }
 
-QByteArray _siyiPacket(uint8_t cmdId, const QByteArray &data)
+QByteArray _siyiPacket(uint8_t cmdId, const QByteArray &data, uint16_t seq)
 {
     QByteArray p;
     p.reserve(10 + data.size());
     p.append(char(0x55)); p.append(char(0x66));
-    p.append(char(0x00));                                       // CTRL: no-ACK
+    p.append(char(0x01));                                       // CTRL: need ACK
     p.append(char(data.size() & 0xFF));
     p.append(char((data.size() >> 8) & 0xFF));
-    p.append(char(0x00)); p.append(char(0x00));                 // SEQ: 0
+    p.append(char(seq & 0xFF));                                 // SEQ little-endian
+    p.append(char((seq >> 8) & 0xFF));
     p.append(char(cmdId));
     p.append(data);
     const uint16_t crc = _siyiCrc16(reinterpret_cast<const uint8_t*>(p.constData()), p.size());
@@ -217,24 +222,44 @@ QByteArray _siyiPacket(uint8_t cmdId, const QByteArray &data)
 bool VideoManager::sendSiyiCameraAction(const QString &action)
 {
     const QString a = action.trimmed().toLower();
-    QByteArray packet;
+    uint8_t cmdId = 0;
+    QByteArray data;
     int repeat = 1;
 
     if (a == QLatin1String("center")) {
-        packet = _siyiPacket(0x08, QByteArray(1, char(0x01)));
+        cmdId = 0x08;
+        data.append(char(0x01));
     } else if (a == QLatin1String("pitch-up")) {
-        packet = _siyiPacket(0x07, QByteArray({ char(0), static_cast<char>(int8_t(50)) }));
+        cmdId = 0x07;
+        data.append(char(0));                                             // yaw
+        data.append(static_cast<char>(static_cast<int8_t>(50)));          // +pitch = up
     } else if (a == QLatin1String("pitch-down")) {
-        packet = _siyiPacket(0x07, QByteArray({ char(0), static_cast<char>(int8_t(-50)) }));
+        cmdId = 0x07;
+        data.append(char(0));
+        data.append(static_cast<char>(static_cast<int8_t>(-50)));         // -pitch = down
     } else if (a == QLatin1String("stop")) {
-        packet = _siyiPacket(0x07, QByteArray({ char(0), char(0) }));
-        repeat = 5;                                           // survive UDP loss
+        cmdId = 0x07;
+        data.append(char(0));
+        data.append(char(0));
+        repeat = 5;                                                       // survive UDP loss
     } else if (a == QLatin1String("capture")) {
-        packet = _siyiPacket(0x0C, QByteArray(1, char(0x00)));
+        cmdId = 0x0C;
+        data.append(char(0x00));
     } else if (a == QLatin1String("rec-toggle")) {
-        packet = _siyiPacket(0x0C, QByteArray(1, char(0x02)));
-    } else if (a == QLatin1String("mode-cycle")) {
-        packet = _siyiPacket(0x0C, QByteArray(1, char(0x03)));
+        cmdId = 0x0C;
+        data.append(char(0x02));
+    } else if (a == QLatin1String("mode-lock")) {
+        cmdId = 0x0C;
+        data.append(char(0x03));
+    } else if (a == QLatin1String("mode-follow")) {
+        cmdId = 0x0C;
+        data.append(char(0x04));
+    } else if (a == QLatin1String("mode-fpv")) {
+        cmdId = 0x0C;
+        data.append(char(0x05));
+    } else if (a == QLatin1String("mode-cycle")) {                        // back-compat alias
+        cmdId = 0x0C;
+        data.append(char(0x03));
     } else {
         return false;
     }
@@ -252,9 +277,15 @@ bool VideoManager::sendSiyiCameraAction(const QString &action)
         return false;
     }
 
-    QUdpSocket socket;
+    // Persistent socket keeps the source port stable so the gimbal treats every packet
+    // as part of the same client session. Monotonic SEQ so the gimbal does not de-dup
+    // repeated stops.
+    static QUdpSocket socket;
+    static std::atomic<uint16_t> nextSeq{1};
+
     bool ok = true;
     for (int i = 0; i < repeat; ++i) {
+        const QByteArray packet = _siyiPacket(cmdId, data, nextSeq.fetch_add(1));
         ok = (socket.writeDatagram(packet, host, port) == packet.size()) && ok;
     }
     return ok;

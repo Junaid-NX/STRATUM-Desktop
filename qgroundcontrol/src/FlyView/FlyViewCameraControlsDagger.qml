@@ -175,12 +175,40 @@ Item {
             }
         }
 
-        // ---- Motion mode cycle (Lock / Follow / FPV) ----------------
-        QGCButton {
-            text: qsTr("Mode")
-            implicitHeight: root._btnHeight
+        // ---- Motion mode (Lock / Follow / FPV) ----------------------
+        // Lock: hold earth-frame attitude (default here — prevents drift with no
+        // vehicle attitude source). Follow: track drone yaw. FPV: mirror drone roll/pitch.
+        RowLayout {
             Layout.fillWidth: true
-            onClicked: { if (root._send("mode-cycle")) root.statusMessage(qsTr("Gimbal mode cycled")) }
+            spacing: root._spacing
+
+            QGCButton {
+                text: qsTr("Lock")
+                implicitHeight: root._btnHeight
+                Layout.fillWidth: true
+                onClicked: { if (root._send("mode-lock"))   root.statusMessage(qsTr("Gimbal → Lock")) }
+            }
+            QGCButton {
+                text: qsTr("Follow")
+                implicitHeight: root._btnHeight
+                Layout.fillWidth: true
+                onClicked: { if (root._send("mode-follow")) root.statusMessage(qsTr("Gimbal → Follow")) }
+            }
+            QGCButton {
+                text: qsTr("FPV")
+                implicitHeight: root._btnHeight
+                Layout.fillWidth: true
+                onClicked: { if (root._send("mode-fpv"))    root.statusMessage(qsTr("Gimbal → FPV")) }
+            }
         }
+    }
+
+    // STRATUM: at panel load, force the A2 mini into Lock mode + centre. Without an
+    // explicit mode the gimbal defaults to Follow, which drifts when no vehicle
+    // attitude is streaming.
+    Component.onCompleted: {
+        _send("stop")
+        _send("mode-lock")
+        _send("center")
     }
 }
