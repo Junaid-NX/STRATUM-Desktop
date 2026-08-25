@@ -388,7 +388,7 @@
             "type": "uint32",
             "enumStrings": "Not Selected,Dropper,Dagger",
             "enumValues": "0,1,2",
-            "default": 0,
+            "default": 2,
             "label": "STRATUM Vehicle Profile",
             "keywords": "stratum,profile,dropper,dagger,vehicle,mode"
         }

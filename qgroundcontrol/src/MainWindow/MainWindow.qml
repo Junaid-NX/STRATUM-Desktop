@@ -26,15 +26,17 @@ ApplicationWindow {
     Component.onCompleted: {
         // Start the sequence of first run prompt(s)
         firstRunPromptManager.nextPrompt()
-        // STRATUM: force a vehicle-profile choice on first launch (Dropper vs Dagger).
-        if (QGroundControl.settingsManager.appSettings.stratumProfile.rawValue === 0) {
-            stratumProfileDialog.open()
+        // STRATUM: force Dagger profile. The Dropper/Dagger picker has been retired;
+        // any legacy "Not Selected" (0) install is silently migrated to Dagger (2).
+        // To restore the picker: revert this branch to open stratumProfileDialog and
+        // set the stratumProfile default back to 0 in App.SettingsGroup.json.
+        if (QGroundControl.settingsManager.appSettings.stratumProfile.rawValue !== 2) {
+            QGroundControl.settingsManager.appSettings.stratumProfile.rawValue = 2
         }
     }
 
-    // STRATUM: startup profile selector. Shown until the operator picks Dropper or Dagger;
-    // the choice is persisted in appSettings.stratumProfile and can be changed later in
-    // Application Settings. Modal with no auto-close so a choice must be made.
+    // STRATUM: legacy profile selector -- retired. Kept in the tree so it can be
+    // reinstated (see Component.onCompleted above). Never opened.
     Popup {
         id:               stratumProfileDialog
         parent:           Overlay.overlay
@@ -43,6 +45,7 @@ ApplicationWindow {
         focus:            true
         closePolicy:      Popup.NoAutoClose
         padding:          ScreenTools.defaultFontPixelWidth * 2
+        visible:          false
 
         function _select(profile) {
             QGroundControl.settingsManager.appSettings.stratumProfile.rawValue = profile

@@ -8,6 +8,7 @@
         {
             "heading": "STRATUM",
             "keywords": ["stratum", "profile", "dropper", "dagger", "vehicle", "mode"],
+            "showWhen": "false",
             "controls": [
                 {
                     "setting": "appSettings.stratumProfile",

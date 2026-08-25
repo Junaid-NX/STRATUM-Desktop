@@ -96,7 +96,8 @@ ToolStripActionList {
         },
         // Dagger: Vision Engagement flight mode (sub=23), camera-guided, no map target.
         VisionEngageAction {
-            visible: _root._stratumIsDagger
+            // STRATUM: hidden per operator UX spec. Flip back to _root._stratumIsDagger to restore.
+            visible: false
             onTriggered: {
                 if (_root.engagementController) {
                     _root.engagementController.visionEngage()
@@ -112,13 +113,15 @@ ToolStripActionList {
         // EngagementController.pnEngage() and therefore still arms the abort
         // destination; see the header of GuidedActionPnEngage.qml.
         GuidedActionPnEngage {
-            visible: _root._stratumIsDagger
+            // STRATUM: hidden per operator UX spec. Flip back to _root._stratumIsDagger to restore.
+            visible: false
         },
         // STRATUM: Tracking on/off toggle -- enables/disables the already-running
         // companion tracker via Vehicle.setTrackerEnabled(bool) (NEXAM_TRACKER_CONFIG 42005).
         // Dagger-only feature (tracker lives on the strike/targeting airframe's companion).
         TrackingToggleAction {
-            visible: _root._stratumIsDagger
+            // STRATUM: hidden per operator UX spec. Flip back to _root._stratumIsDagger to restore.
+            visible: false
         },
         // STRATUM: one-time ping to register this machine with the pod (press once,
         // before connecting the main GCS). Does not hold control of the camera.

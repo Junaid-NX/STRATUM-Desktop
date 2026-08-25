@@ -43,6 +43,7 @@
         {
             "heading": "Guided Commands",
             "keywords": ["altitude", "guided", "minimum", "maximum", "goto", "go to", "loiter radius", "confirmation"],
+            "showWhen": "false",
             "controls": [
                 {
                     "setting": "flyViewSettings.guidedMinimumAltitude"
@@ -64,6 +65,7 @@
         {
             "heading": "Battery Safety",
             "keywords": ["battery", "voltage", "rtl", "return", "low battery", "safety", "threshold"],
+            "showWhen": "false",
             "controls": [
                 {
                     "setting": "flyViewSettings.lowBatteryRTLVoltage"
@@ -73,6 +75,7 @@
         {
             "component": "MavlinkActionSettings",
             "sectionName": "MAVLink Actions",
+            "showWhen": "false",
             "keywords": [
                 "mavlink action",
                 "pre-arm",

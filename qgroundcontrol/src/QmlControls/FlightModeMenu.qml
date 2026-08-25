@@ -30,8 +30,9 @@ QGCLabel {
     // STRATUM: operator UX spec whitelist -- mirrors FlightModeIndicator.qml. Empty to
     // restore upstream behaviour (all firmware modes shown).
     readonly property var _stratumAllowedFlightModes: [
-        qsTr("Takeoff"), qsTr("Land"), qsTr("Return"),
-        qsTr("Standoff"), qsTr("Engagement"), qsTr("Vision Engagement"),
+        qsTr("Takeoff"), qsTr("Land"),
+        qsTr("Safe Recovery"), qsTr("Return"),
+        qsTr("Standoff"), qsTr("Engagement"),
         qsTr("Hold"), qsTr("Abort")
     ]
 

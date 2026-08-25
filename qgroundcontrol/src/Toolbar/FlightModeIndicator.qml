@@ -190,8 +190,9 @@ Item {
                 // callbacks are unchanged); we just hide unsupported entries. Empty
                 // the array to restore upstream behaviour (show every mode).
                 readonly property var _stratumAllowedFlightModes: [
-                    qsTr("Takeoff"), qsTr("Land"), qsTr("Return"),
-                    qsTr("Standoff"), qsTr("Engagement"), qsTr("Vision Engagement"),
+                    qsTr("Takeoff"), qsTr("Land"),
+                    qsTr("Safe Recovery"), qsTr("Return"),
+                    qsTr("Standoff"), qsTr("Engagement"),
                     qsTr("Hold"), qsTr("Abort")
                 ]
                 model: activeVehicle
