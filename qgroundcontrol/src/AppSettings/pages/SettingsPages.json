@@ -19,13 +19,14 @@
             "qml": "Viewer3DSettings.qml",
             "icon": "qrc:/qml/QGroundControl/Viewer3D/City3DMapIcon.svg",
             "pageDefinition": "Viewer3D.SettingsUI.json",
-            "visible": "QGroundControl.settingsManager.viewer3DSettings.userVisible"
+            "visible": "false"
         },
         {
             "name": "Plan View",
             "qml": "PlanViewSettings.qml",
             "icon": "qrc:/qmlimages/Plan.svg",
-            "pageDefinition": "PlanView.SettingsUI.json"
+            "pageDefinition": "PlanView.SettingsUI.json",
+            "visible": "false"
         },
         {
             "divider": true
@@ -34,24 +35,28 @@
             "name": "ADSB Server",
             "qml": "ADSBServerSettings.qml",
             "icon": "qrc:/InstrumentValueIcons/airplane.svg",
-            "pageDefinition": "ADSBVehicleManager.SettingsUI.json"
+            "pageDefinition": "ADSBVehicleManager.SettingsUI.json",
+            "visible": "false"
         },
         {
             "name": "Comm Links",
             "qml": "CommLinksSettings.qml",
             "icon": "qrc:/InstrumentValueIcons/usb.svg",
-            "pageDefinition": "CommLinks.SettingsUI.json"
+            "pageDefinition": "CommLinks.SettingsUI.json",
+            "visible": "false"
         },
         {
             "name": "App Logging",
             "qml": "LoggingSettings.qml",
             "icon": "qrc:/InstrumentValueIcons/conversation.svg",
-            "pageDefinition": "Logging.SettingsUI.json"
+            "pageDefinition": "Logging.SettingsUI.json",
+            "visible": "false"
         },
         {
             "name": "App Log Viewer",
             "qml": "AppLogging.qml",
-            "icon": "qrc:/InstrumentValueIcons/conversation.svg"
+            "icon": "qrc:/InstrumentValueIcons/conversation.svg",
+            "visible": "false"
         },
         {
             "name": "Maps",
@@ -63,27 +68,29 @@
             "name": "NTRIP/RTK",
             "qml": "NTRIPSettings.qml",
             "icon": "qrc:/InstrumentValueIcons/globe.svg",
-            "visible": "QGroundControl.settingsManager && QGroundControl.settingsManager.ntripSettings !== undefined",
+            "visible": "false",
             "pageDefinition": "NTRIP.SettingsUI.json"
         },
         {
             "name": "PX4 Log Transfer",
             "qml": "PX4LogTransferSettings.qml",
             "icon": "qrc:/InstrumentValueIcons/inbox-download.svg",
-            "visible": "QGroundControl.corePlugin.options.showPX4LogTransferOptions && QGroundControl.px4ProFirmwareSupported && (QGroundControl.multiVehicleManager.activeVehicle ? QGroundControl.multiVehicleManager.activeVehicle.px4Firmware : true)",
+            "visible": "false",
             "pageDefinition": "PX4LogTransfer.SettingsUI.json"
         },
         {
             "name": "Remote ID",
             "qml": "RemoteIDSettings.qml",
             "icon": "qrc:/qmlimages/RidIconManNoID.svg",
-            "pageDefinition": "RemoteID.SettingsUI.json"
+            "pageDefinition": "RemoteID.SettingsUI.json",
+            "visible": "false"
         },
         {
             "name": "Telemetry",
             "qml": "TelemetrySettings.qml",
             "icon": "qrc:/InstrumentValueIcons/drone.svg",
-            "pageDefinition": "Telemetry.SettingsUI.json"
+            "pageDefinition": "Telemetry.SettingsUI.json",
+            "visible": "false"
         },
         {
             "name": "Video",

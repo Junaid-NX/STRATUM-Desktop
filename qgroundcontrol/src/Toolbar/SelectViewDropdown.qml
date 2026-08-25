@@ -54,7 +54,9 @@ ToolIndicatorPage {
                 Layout.fillWidth: true
                 text: qsTr("Analyze")
                 imageResource: "/qmlimages/Analyze.svg"
-                visible: QGroundControl.corePlugin.showAdvancedUI
+                // STRATUM: hidden per operator UX spec. Flip to the upstream expression
+                // (QGroundControl.corePlugin.showAdvancedUI) to bring it back.
+                visible: false
                 onClicked: {
                     if (mainWindow.allowViewSwitch()) {
                         mainWindow.closeIndicatorDrawer()
@@ -70,6 +72,9 @@ ToolIndicatorPage {
                 Layout.fillWidth: true
                 text: qsTr("Configure")
                 imageResource: "/res/GearWithPaperPlane.svg"
+                // STRATUM: hidden per operator UX spec (no vehicle-configuration flow in
+                // the field). Flip to true to bring it back.
+                visible: false
                 onClicked: {
                     if (mainWindow.allowViewSwitch()) {
                         mainWindow.closeIndicatorDrawer()

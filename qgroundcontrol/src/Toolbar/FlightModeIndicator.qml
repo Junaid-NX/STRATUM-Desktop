@@ -185,7 +185,22 @@ Item {
 
             Repeater {
                 id:     modeRepeater
-                model:  activeVehicle ? activeVehicle.flightModes : []
+                // STRATUM: operator UX spec limits the mode picker to a whitelist. The
+                // firmware plugin still enumerates the full list (so telemetry / mode
+                // callbacks are unchanged); we just hide unsupported entries. Empty
+                // the array to restore upstream behaviour (show every mode).
+                readonly property var _stratumAllowedFlightModes: [
+                    qsTr("Takeoff"), qsTr("Land"), qsTr("Return"),
+                    qsTr("Standoff"), qsTr("Engagement"), qsTr("Vision Engagement"),
+                    qsTr("Hold"), qsTr("Abort")
+                ]
+                model: activeVehicle
+                       ? (_stratumAllowedFlightModes.length === 0
+                          ? activeVehicle.flightModes
+                          : activeVehicle.flightModes.filter(function(m) {
+                                return _stratumAllowedFlightModes.indexOf(m) !== -1
+                            }))
+                       : []
 
                 RowLayout {
                     spacing: ScreenTools.defaultFontPixelWidth

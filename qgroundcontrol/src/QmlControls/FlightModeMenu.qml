@@ -27,6 +27,14 @@ QGCLabel {
 
     property var flightModesMenuItems: []
 
+    // STRATUM: operator UX spec whitelist -- mirrors FlightModeIndicator.qml. Empty to
+    // restore upstream behaviour (all firmware modes shown).
+    readonly property var _stratumAllowedFlightModes: [
+        qsTr("Takeoff"), qsTr("Land"), qsTr("Return"),
+        qsTr("Standoff"), qsTr("Engagement"), qsTr("Vision Engagement"),
+        qsTr("Hold"), qsTr("Abort")
+    ]
+
     function updateFlightModesMenu() {
         if (currentVehicle && currentVehicle.flightModeSetAvailable) {
             var i;
@@ -35,9 +43,15 @@ QGCLabel {
                 flightModesMenu.removeItem(flightModesMenuItems[i])
             }
             flightModesMenuItems.length = 0
+            var modes = currentVehicle.flightModes
+            if (_stratumAllowedFlightModes.length > 0) {
+                modes = modes.filter(function(m) {
+                    return _stratumAllowedFlightModes.indexOf(m) !== -1
+                })
+            }
             // Add new items
-            for (i = 0; i < currentVehicle.flightModes.length; i++) {
-                var menuItem = flightModeMenuItemComponent.createObject(null, { "text": currentVehicle.flightModes[i] })
+            for (i = 0; i < modes.length; i++) {
+                var menuItem = flightModeMenuItemComponent.createObject(null, { "text": modes[i] })
                 flightModesMenuItems.push(menuItem)
                 flightModesMenu.insertItem(i, menuItem)
             }
