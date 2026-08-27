@@ -53,32 +53,36 @@ Item {
     // distanceMeters / heightMeters are in METERS, speed in KM/H (Dropper), direction is
     // a cardinal index (0=N,1=E,2=S,3=W). targetCoordinate carries the target designated
     // in the Set Standoff panel (manual lat/lon entry or crosshair map pick).
+    // Returns true on commit, false if the request was rejected (bad vehicle, invalid
+    // coordinate, or Vehicle::guidedModeStandoff distance check). On a false return
+    // NOTHING is mutated: no flight-mode switch, no surveillance circle.
     function beginStandoff(distanceMeters, heightMeters, speed, direction, targetCoordinate) {
         if (!_activeVehicle) {
-            return
+            return false
         }
+        var target = _targetCoordinate
         if (targetCoordinate !== undefined && targetCoordinate.isValid) {
-            _targetCoordinate = targetCoordinate
+            target = targetCoordinate
         }
-        if (!_targetCoordinate.isValid) {
-            return
+        if (!target.isValid) {
+            return false
         }
-        _standoffDistance  = distanceMeters
-        _standoffHeight    = heightMeters
-        _standoffSpeed     = speed
-        _standoffDirection = direction
 
         if (_isDagger) {
-            // Dagger path: hand PX4 the TARGET point + geometry, then switch flight mode.
+            // Dagger path: hand PX4 the TARGET point + geometry. guidedModeStandoff
+            // range-checks against flyViewSettings.maxGoToLocationDistance and returns
+            // false (with a toast) when the hold point is too far from the aircraft.
             // Cardinal index -> compass bearing degrees (0=N,90=E,180=S,270=W).
             var bearingDeg = (direction * 90) % 360
-            _activeVehicle.guidedModeStandoff(_targetCoordinate, distanceMeters, bearingDeg, heightMeters)
+            if (!_activeVehicle.guidedModeStandoff(target, distanceMeters, bearingDeg, heightMeters)) {
+                return false
+            }
             _activeVehicle.flightMode = "Standoff"
         } else {
             // Dropper path: web UI contract to the bridge companion computer.
             _activeVehicle.sendCommand(_bridgeComponentId, _cmdStandoffParams, true,
-                                       _targetCoordinate.latitude,
-                                       _targetCoordinate.longitude,
+                                       target.latitude,
+                                       target.longitude,
                                        distanceMeters,
                                        heightMeters,
                                        speed,
@@ -88,7 +92,13 @@ Item {
                                        1, 0, 0, 0, 0, 0, 0)
         }
 
-        _standoffActive = true
+        _targetCoordinate  = target
+        _standoffDistance  = distanceMeters
+        _standoffHeight    = heightMeters
+        _standoffSpeed     = speed
+        _standoffDirection = direction
+        _standoffActive    = true
+        return true
     }
 
     // Abort the standoff/orbit. On Dropper this fires 31011 activate=0 to the bridge; on

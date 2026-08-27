@@ -54,7 +54,10 @@ Item {
 
         QGCLabel {
             id:                 flightModeLabel
-            text:               activeVehicle ? activeVehicle.flightMode : qsTr("N/A", "No data to display")
+            // STRATUM: PX4's "Position" (POSCTL) is presented as "Manual" throughout the UI.
+            text:               activeVehicle
+                                ? (activeVehicle.flightMode === qsTr("Position") ? qsTr("Manual") : activeVehicle.flightMode)
+                                : qsTr("N/A", "No data to display")
             color:              ribbonTextColor
             font.pointSize:     fontPointSize
 
@@ -192,9 +195,19 @@ Item {
                 readonly property var _stratumAllowedFlightModes: [
                     qsTr("Takeoff"), qsTr("Land"),
                     qsTr("Safe Recovery"), qsTr("Return"),
+                    qsTr("Position"),
                     qsTr("Standoff"), qsTr("Engagement"),
                     qsTr("Hold"), qsTr("Abort")
                 ]
+                // STRATUM: PX4's "Position" (POSCTL) is what the operator knows as
+                // "Manual". Rename the label only; the flight-mode string sent to the
+                // vehicle stays "Position" (see modeButton.onActivated below).
+                function _stratumDisplayLabel(mode) {
+                    if (mode === qsTr("Position")) {
+                        return qsTr("Manual")
+                    }
+                    return mode
+                }
                 model: activeVehicle
                        ? (_stratumAllowedFlightModes.length === 0
                           ? activeVehicle.flightModes
@@ -209,7 +222,7 @@ Item {
 
                     QGCDelayButton {
                         id:                 modeButton
-                        text:               modelData
+                        text:               modeRepeater._stratumDisplayLabel(modelData)
                         delay:              flightModeSettings.requireModeChangeConfirmation.rawValue ? defaultDelay : 0
                         Layout.fillWidth:   true
 

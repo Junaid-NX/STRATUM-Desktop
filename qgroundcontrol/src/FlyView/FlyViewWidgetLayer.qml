@@ -497,8 +497,13 @@ Item {
                             return
                         }
                         standoffPanel._aopReject = false
-                        mapControl.standoffCmdController.beginStandoff(distance, height, speed, direction, target)
-                        standoffPanel.close()
+                        // STRATUM: beginStandoff returns false when Vehicle::guidedModeStandoff
+                        // rejects the request (e.g. hold point beyond maxGoToLocationDistance).
+                        // Leave the panel open so the operator can adjust; the rejection toast
+                        // is emitted from Vehicle.cc.
+                        if (mapControl.standoffCmdController.beginStandoff(distance, height, speed, direction, target)) {
+                            standoffPanel.close()
+                        }
                     }
                 }
             }

@@ -7,7 +7,10 @@ import QGroundControl.Controls
 // Label control whichs pop up a flight mode change menu when clicked
 QGCLabel {
     id:     _root
-    text:   currentVehicle ? currentVehicle.flightMode : qsTr("N/A", "No data to display")
+    // STRATUM: current-mode label mirrors the picker relabelling (Position -> Manual).
+    text:   currentVehicle
+            ? (currentVehicle.flightMode === qsTr("Position") ? qsTr("Manual") : currentVehicle.flightMode)
+            : qsTr("N/A", "No data to display")
 
     property var    currentVehicle:         QGroundControl.multiVehicleManager.activeVehicle
     property real   mouseAreaLeftMargin:    0
@@ -21,7 +24,11 @@ QGCLabel {
 
         MenuItem {
             enabled: true
-            onTriggered: currentVehicle.flightMode = text
+            // STRATUM: item's visible text can be remapped (see _stratumDisplayLabel).
+            // Keep the real firmware mode name on the item so the flight-mode set
+            // hits the correct PX4 mode regardless of the display label.
+            property string stratumRealMode: text
+            onTriggered: currentVehicle.flightMode = stratumRealMode
         }
     }
 
@@ -32,9 +39,20 @@ QGCLabel {
     readonly property var _stratumAllowedFlightModes: [
         qsTr("Takeoff"), qsTr("Land"),
         qsTr("Safe Recovery"), qsTr("Return"),
+        qsTr("Position"),
         qsTr("Standoff"), qsTr("Engagement"),
         qsTr("Hold"), qsTr("Abort")
     ]
+
+    // STRATUM: PX4 "Position" (POSCTL) is what the operator picks as "Manual". The menu
+    // item label is remapped here, but the flight-mode string sent to the vehicle stays
+    // "Position" -- see the onTriggered handler on flightModeMenuItemComponent.
+    function _stratumDisplayLabel(mode) {
+        if (mode === qsTr("Position")) {
+            return qsTr("Manual")
+        }
+        return mode
+    }
 
     function updateFlightModesMenu() {
         if (currentVehicle && currentVehicle.flightModeSetAvailable) {
@@ -52,7 +70,10 @@ QGCLabel {
             }
             // Add new items
             for (i = 0; i < modes.length; i++) {
-                var menuItem = flightModeMenuItemComponent.createObject(null, { "text": modes[i] })
+                var menuItem = flightModeMenuItemComponent.createObject(null, {
+                    "text": _stratumDisplayLabel(modes[i]),
+                    "stratumRealMode": modes[i]
+                })
                 flightModesMenuItems.push(menuItem)
                 flightModesMenu.insertItem(i, menuItem)
             }
