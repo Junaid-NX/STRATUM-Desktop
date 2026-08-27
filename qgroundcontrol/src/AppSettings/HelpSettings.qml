@@ -42,9 +42,9 @@ Rectangle {
                            "For each task, follow the steps in order.")
             }
 
-            // ----- How to fetch a target ---------------------------------
+            // ----- How to define an Area of Operations -------------------
             QGCLabel {
-                text:            qsTr("How to fetch a target")
+                text:            qsTr("How to define an Area of Operations (AOP)")
                 font.pointSize:  ScreenTools.largeFontPointSize
                 font.bold:       true
             }
@@ -52,17 +52,17 @@ Rectangle {
                 Layout.fillWidth: true
                 Layout.leftMargin: _stepIndent
                 wrapMode:         Text.WordWrap
-                text: qsTr("1. On the Fly view tool strip on the right, press the green \"Connect Pod\" button. " +
-                           "You only need to do this the first time you use the pod after turning it on.\n\n" +
-                           "2. Wait until the status message says the pod is ready.\n\n" +
-                           "3. Press the blue \"Fetch Target\" button. The app will listen to the pod for about 30 seconds. " +
-                           "When a target is received, a pin will appear on the map showing where it is.\n\n" +
-                           "4. If you want to clear the pin, press \"Fetch Target\" again to start a fresh capture.")
+                text: qsTr("The AOP is the boundary the aircraft is allowed to work inside. Targets and Standoff points must sit inside it.\n\n" +
+                           "1. On the top ribbon, press \"Define AOP\". A box will appear centred on the map.\n\n" +
+                           "2. Drag the corner handles to shape the boundary. Add more corners by dragging the small handles on the edges.\n\n" +
+                           "3. Keep every corner inside the allowed range. If a corner sits too far away the app will reject the change when you press Apply.\n\n" +
+                           "4. When the shape looks right, press \"Apply changes\". If a red message appears, pull the outermost corner in and press Apply again.\n\n" +
+                           "The maximum AOP size can be adjusted in Application Settings → General → STRATUM Operational Limits → \"Max AOP Distance\".")
             }
 
             // ----- How to set a Standoff point ---------------------------
             QGCLabel {
-                text:            qsTr("How to set a Standoff point")
+                text:            qsTr("How to pick a target and set a Standoff point")
                 font.pointSize:  ScreenTools.largeFontPointSize
                 font.bold:       true
             }
@@ -71,14 +71,15 @@ Rectangle {
                 Layout.leftMargin: _stepIndent
                 wrapMode:         Text.WordWrap
                 text: qsTr("The Standoff point is where the aircraft will hold and observe the target from a safe distance.\n\n" +
-                           "1. Make sure a target pin is on the map (see \"How to fetch a target\" above), " +
-                           "or tap-and-hold on the map at the location you want to observe.\n\n" +
-                           "2. Open the Standoff panel from the Fly view tool strip and check the values:\n" +
+                           "1. On the top ribbon, press \"Set Standoff\". The Set Standoff panel opens.\n\n" +
+                           "2. Choose the target location. Either type the latitude and longitude, or press the crosshair icon and tap on the map where the target is. The target must lie inside the AOP.\n\n" +
+                           "3. Fill in the values:\n" +
                            "   • Distance — how far the aircraft stays from the target.\n" +
-                           "   • Height — how high above the target the aircraft flies.\n" +
-                           "   • Direction — which side of the target the aircraft holds on.\n\n" +
-                           "3. Press \"Set Standoff\". The aircraft will fly to the standoff point and hold. " +
-                           "You can change the values while it holds; it will move to the new point.")
+                           "   • Height AGL — how high above the ground the aircraft flies.\n" +
+                           "   • Speed — cruise speed to the standoff point.\n" +
+                           "   • Direction — which side of the target the aircraft holds on (North, East, South, West).\n\n" +
+                           "4. Press \"Set Standoff\". The aircraft will fly to the standoff point and orbit it. You can reopen the panel and re-apply new values while it holds; it will move to the new point.\n\n" +
+                           "If the app says the standoff point is too far, either move the target closer to the aircraft or increase Application Settings → General → STRATUM Operational Limits → \"Max Standoff Distance\".")
             }
 
             // ----- How to change flight modes ----------------------------

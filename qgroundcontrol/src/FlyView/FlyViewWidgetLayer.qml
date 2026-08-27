@@ -121,6 +121,31 @@ Item {
                     text:                   qsTr("No vehicle connected. This AOP is being laid out locally and will be uploaded as an inclusion geofence once a vehicle is connected.")
                 }
             }
+
+            // STRATUM: red warning shown when the last Apply was rejected because at
+            // least one AOP vertex sat farther than the "Max AOP Distance" setting
+            // (Application Settings -> General -> STRATUM Operational Limits) from the
+            // enforcement anchor (vehicle home / vehicle / map centre).
+            Rectangle {
+                id:                 aopRangeRejectWarning
+                Layout.alignment:   Qt.AlignHCenter
+                visible:            mapControl && mapControl._aopRangeReject
+                width:              aopRangeRejectLabel.width + _toolsMargin * 3
+                height:             aopRangeRejectLabel.height + _toolsMargin * 1.5
+                radius:             _margins / 2
+                color:              "#EF5350"
+
+                QGCLabel {
+                    id:                     aopRangeRejectLabel
+                    anchors.centerIn:       parent
+                    width:                  ScreenTools.defaultFontPixelWidth * 46
+                    wrapMode:               Text.WordWrap
+                    horizontalAlignment:    Text.AlignHCenter
+                    color:                  "white"
+                    text:                   qsTr("Apply rejected: one or more AOP vertices are farther than the configured Max AOP Distance (%1 m). Pull the outer vertices inward and try again.")
+                                                .arg(Math.round(QGroundControl.settingsManager.flyViewSettings.maxAOPDistance.rawValue))
+                }
+            }
         }
     }
 

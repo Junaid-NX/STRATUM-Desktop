@@ -127,13 +127,15 @@ ToolStripActionList {
         // before connecting the main GCS). Does not hold control of the camera.
         // Dagger-only.
         ConnectPodAction {
-            visible:     _root._stratumIsDagger
+            // STRATUM: hidden per operator UX spec. Flip back to _root._stratumIsDagger to restore.
+            visible:     false
             onTriggered: QGroundControl.targetFetch.pingPod()
         },
         // STRATUM: fetch the XC25 pod's target and plot it on the map. Runs 30 s,
         // re-reading every 2 s and replacing the marker each time. Dagger-only.
         FetchTargetAction {
-            visible:     _root._stratumIsDagger
+            // STRATUM: hidden per operator UX spec. Flip back to _root._stratumIsDagger to restore.
+            visible:     false
             onTriggered: QGroundControl.targetFetch.fetchTarget()
         },
         // Dropper: payload + camera control panel.

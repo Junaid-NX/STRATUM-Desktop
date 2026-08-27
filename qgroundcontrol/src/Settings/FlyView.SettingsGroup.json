@@ -69,13 +69,23 @@
         },
         {
             "name": "maxGoToLocationDistance",
-            "shortDesc": "Maximum allowed distance for go-to-location commands from the vehicle.",
+            "shortDesc": "Maximum allowed distance for go-to-location and Standoff commands from the vehicle.",
             "type": "double",
             "units": "m",
-            "default": 20000,
+            "default": 1000,
             "min": 1,
-            "label": "Go To Location Max Distance",
-            "keywords": "goto,go to"
+            "label": "Max Standoff Distance",
+            "keywords": "goto,go to,standoff,stratum,limit,distance"
+        },
+        {
+            "name": "maxAOPDistance",
+            "shortDesc": "Maximum allowed distance of any Area of Operations vertex from the vehicle home position.",
+            "type": "double",
+            "units": "m",
+            "default": 2000,
+            "min": 1,
+            "label": "Max AOP Distance",
+            "keywords": "aop,area of operations,geofence,stratum,limit,distance"
         },
         {
             "name": "forwardFlightGoToLocationLoiterRad",

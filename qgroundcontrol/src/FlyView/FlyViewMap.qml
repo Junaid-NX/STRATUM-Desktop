@@ -53,6 +53,11 @@ FlightMap {
     // geofence polygon becomes interactive (draggable vertices, add/remove)
     // and the Apply/Cancel bar is shown. The AOP is a polygon inclusion fence.
     property bool   _aopEditMode:               false
+    // STRATUM: latched true when the last Apply was rejected because an AOP vertex sat
+    // farther than flyViewSettings.maxAOPDistance from the enforcement anchor. Consumed
+    // by the edit-bar warning in FlyViewWidgetLayer.qml; cleared on the next Apply and
+    // on cancel.
+    property bool   _aopRangeReject:            false
 
     // STRATUM: Standoff target pick mode. Driven by the Set Standoff panel in
     // FlyViewWidgetLayer: while active the map cursor is a crosshair and a left
@@ -159,6 +164,58 @@ FlightMap {
         }
         _makeAOPPolygonsInteractive()
         _aopEditMode = true
+        _aopRangeReject = false
+    }
+
+    // STRATUM: enforcement anchor for the max-AOP-distance check. Home wins when
+    // it is valid, then the live vehicle coordinate, then the map centre as an offline
+    // fallback. Returning an invalid coordinate disables the check entirely.
+    function _aopRangeAnchor() {
+        var v = QGroundControl.multiVehicleManager.activeVehicle
+        if (v) {
+            if (v.homePosition && v.homePosition.isValid) {
+                return v.homePosition
+            }
+            if (v.coordinate && v.coordinate.isValid) {
+                return v.coordinate
+            }
+        }
+        if (_root.center && _root.center.isValid) {
+            return _root.center
+        }
+        return QtPositioning.coordinate()
+    }
+
+    // STRATUM: returns true if every inclusion-polygon vertex sits within
+    // flyViewSettings.maxAOPDistance metres of _aopRangeAnchor(). An invalid anchor
+    // (no vehicle and no map centre) short-circuits to true so the check never blocks
+    // a genuinely offline layout.
+    function _aopVerticesWithinRange() {
+        if (!_geoFenceController) {
+            return true
+        }
+        var anchor = _aopRangeAnchor()
+        if (!anchor.isValid) {
+            return true
+        }
+        var maxMeters = QGroundControl.settingsManager.flyViewSettings.maxAOPDistance.rawValue
+        for (var i = 0; i < _geoFenceController.polygons.count; i++) {
+            var poly = _geoFenceController.polygons.get(i)
+            if (!poly || !poly.inclusion) {
+                continue
+            }
+            var path = poly.path
+            for (var v = 0; v < path.length; v++) {
+                var vertex = path[v]
+                if (!vertex || !vertex.isValid) {
+                    continue
+                }
+                if (anchor.distanceTo(vertex) > maxMeters) {
+                    return false
+                }
+            }
+        }
+        return true
     }
 
     // Commit the AOP: lock the polygon and, when a vehicle is connected, upload
@@ -168,6 +225,14 @@ FlightMap {
         if (!_geoFenceController) {
             return
         }
+        // STRATUM: reject the commit if any vertex is farther than
+        // flyViewSettings.maxAOPDistance from the anchor. Do NOT drop interactivity
+        // or leave edit mode - the operator must pull the offending vertex in.
+        if (!_aopVerticesWithinRange()) {
+            _aopRangeReject = true
+            return
+        }
+        _aopRangeReject = false
         for (var i = 0; i < _geoFenceController.polygons.count; i++) {
             _geoFenceController.polygons.get(i).interactive = false
         }
@@ -184,6 +249,7 @@ FlightMap {
     // Abandon edits. If a vehicle is connected, restore the boundary it holds;
     // otherwise just drop interactivity and leave the local boundary untouched.
     function cancelAOPEdit() {
+        _aopRangeReject = false
         if (!_geoFenceController) {
             _aopEditMode = false
             return

@@ -17,6 +17,18 @@
             ]
         },
         {
+            "heading": "STRATUM Operational Limits",
+            "keywords": ["stratum", "standoff", "aop", "area of operations", "limit", "distance", "max"],
+            "controls": [
+                {
+                    "setting": "flyViewSettings.maxGoToLocationDistance"
+                },
+                {
+                    "setting": "flyViewSettings.maxAOPDistance"
+                }
+            ]
+        },
+        {
             "heading": "General",
             "keywords": ["language", "locale", "color scheme", "dark mode", "theme", "palette", "follow me", "audio", "volume", "sound", "gstreamer", "debug level", "ui scale", "font size", "zoom", "save path", "storage", "reset", "clear settings", "factory reset"],
             "controls": [
