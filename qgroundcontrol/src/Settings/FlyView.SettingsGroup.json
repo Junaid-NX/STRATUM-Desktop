@@ -72,7 +72,7 @@
             "shortDesc": "Maximum allowed distance for go-to-location commands from the vehicle.",
             "type": "double",
             "units": "m",
-            "default": 1000,
+            "default": 20000,
             "min": 1,
             "label": "Go To Location Max Distance",
             "keywords": "goto,go to"
