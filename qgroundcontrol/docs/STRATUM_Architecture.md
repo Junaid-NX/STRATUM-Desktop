@@ -143,13 +143,13 @@ autopilot; each has its own trust boundary and lifecycle.
   QGC's `LinkManager` and multiplexed in `MAVLinkProtocol`.
 - **Dialect:** `stratum` — QGC-side compile-time selection via `QGC_MAVLINK_DIALECT`
   in `cmake/CustomOptions.cmake`. The dialect XML includes upstream `all.xml`
-  and appends 42001–42006 (see §5).
+  and appends 42001–42006 (see [STRATUM MAVLink dialect](#5-stratum-mavlink-dialect)).
 - **System / component ids:**
   - `sysid` — the vehicle (default 1). Set on connect via `Vehicle::id()`.
   - `compid = 1` (autopilot) — target for flight-mode set, standoff command.
   - `compid = 191` (bridge / companion) — target for Dropper standoff commit and
     for the tracker `setTrackerEnabled/setTrackerRoi` traffic.
-- **Custom commands used**: see §5.
+- **Custom commands used**: see [Custom commands (COMMAND_INT / COMMAND_LONG)](#52-custom-commands-command_int--command_long).
 - **Streamed messages consumed**: `ENGAGEMENT_STATUS` (42001, ~5 Hz),
   `VISION_ENGAGEMENT_STATUS` (42002), `PN_ENGAGEMENT_STATUS` (42006),
   `NEXAM_TARGET_TRACK` (42004).
@@ -339,7 +339,7 @@ PN Engage, Abort). Contract:
   session.
 - The UI gates (`engaged`, `visionEngaged`, `pnEngaged`) key off the reported
   flight mode; the corresponding overlay reads the matching `4200x` telemetry
-  stream (see §5.1).
+  stream (see [Custom messages (42001–42006)](#51-custom-messages-4200142006)).
 
 ### 7.4 AOP (Area of Operations)
 
@@ -360,7 +360,7 @@ PN Engage, Abort). Contract:
 
 ### 7.5 `TargetFetchManager` — pod integration
 
-See §4.3. Application-static singleton, exposed to QML as
+See [XC25 pod — direct UDP (side-channel)](#43-xc25-pod--direct-udp-side-channel). Application-static singleton, exposed to QML as
 `QGroundControl.targetFetch`. The 30 s fetch session re-reads the pod status
 every 2 s, replacing the plotted marker each pass. `pingPod()` sends a brief
 25 Hz heartbeat burst (~5 s) and stops — never holds control of the pod.
