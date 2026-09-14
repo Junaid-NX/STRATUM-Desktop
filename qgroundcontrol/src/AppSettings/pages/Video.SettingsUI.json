@@ -120,6 +120,12 @@
                     "setting": "videoSettings.daggerCameraSdkPort"
                 }
             ]
+        },
+        {
+            "component": "DaggerC12CameraNetwork",
+            "sectionName": "Dagger Camera Control (C12)",
+            "keywords": ["dagger", "c12", "skydroid", "yunzhuo", "gimbal", "camera", "ip", "host", "network"],
+            "showWhen": "isDaggerProfile"
         }
     ]
 }

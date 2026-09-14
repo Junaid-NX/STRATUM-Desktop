@@ -64,6 +64,7 @@ qt_add_qml_module(AppSettingsModule
         # Hand-coded pages and components
         AppLogging.qml
         BluetoothSettings.qml
+        DaggerC12CameraNetwork.qml
         DebugWindow.qml
         GcsPositionStatus.qml
         HelpSettings.qml

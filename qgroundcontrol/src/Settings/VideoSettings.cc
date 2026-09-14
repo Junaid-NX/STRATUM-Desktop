@@ -271,6 +271,9 @@ DECLARE_SETTINGSFACT(VideoSettings, daggerCamera)
 // Read by VideoManager::sendSiyiCameraAction each command; edits take effect immediately.
 DECLARE_SETTINGSFACT(VideoSettings, daggerCameraSdkHost)
 DECLARE_SETTINGSFACT(VideoSettings, daggerCameraSdkPort)
+// STRATUM: Current C12 gimbal IP. Read by every C12 command in VideoManager and
+// rewritten by setC12CameraIp() after a successful reprogram.
+DECLARE_SETTINGSFACT(VideoSettings, daggerC12Host)
 
 bool VideoSettings::streamConfigured(void)
 {

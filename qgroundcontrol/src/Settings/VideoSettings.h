@@ -25,6 +25,7 @@ public:
     DEFINE_SETTINGFACT(daggerCamera)        // STRATUM: 0 = A2 mini, 1 = C12
     DEFINE_SETTINGFACT(daggerCameraSdkHost) // STRATUM: A2 mini SDK IP
     DEFINE_SETTINGFACT(daggerCameraSdkPort) // STRATUM: A2 mini SDK UDP port
+    DEFINE_SETTINGFACT(daggerC12Host)       // STRATUM: current C12 gimbal IP
     DEFINE_SETTINGFACT(aspectRatio)
     DEFINE_SETTINGFACT(videoFit)
     DEFINE_SETTINGFACT(gridLines)

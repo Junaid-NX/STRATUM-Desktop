@@ -78,6 +78,15 @@ VideoManager::~VideoManager()
     qCDebug(VideoManagerLog) << this;
 }
 
+// STRATUM: current C12 gimbal IP. Reads videoSettings.daggerC12Host; falls back to the
+// factory default so a missing/empty setting doesn't silently break the camera.
+static QString _daggerC12Host()
+{
+    auto *vs = SettingsManager::instance() ? SettingsManager::instance()->videoSettings() : nullptr;
+    const QString stored = vs ? vs->daggerC12Host()->rawValue().toString().trimmed() : QString();
+    return stored.isEmpty() ? QStringLiteral("192.168.144.108") : stored;
+}
+
 bool VideoManager::sendCameraAction(const QString &action)
 {
     const QString normalizedAction = action.trimmed().toLower();
@@ -139,7 +148,11 @@ bool VideoManager::sendCameraAction(const QString &action)
     }
 
     QUdpSocket socket;
-    const QHostAddress host(QStringLiteral("192.168.144.108"));
+    const QHostAddress host(_daggerC12Host());
+    if (host.isNull()) {
+        qCWarning(VideoManagerLog) << "sendCameraAction: invalid C12 host" << _daggerC12Host();
+        return false;
+    }
     return socket.writeDatagram(payload, host, 5000) == payload.size();
 }
 
@@ -158,13 +171,65 @@ bool VideoManager::sendCameraTrackPoint(int x, int y)
 
     const QByteArray payload = base + QByteArray::number(sum & 0xFF, 16).toUpper().rightJustified(2, '0');
     QUdpSocket socket;
-    const QHostAddress host(QStringLiteral("192.168.144.108"));
+    const QHostAddress host(_daggerC12Host());
+    if (host.isNull()) {
+        qCWarning(VideoManagerLog) << "sendCameraTrackPoint: invalid C12 host" << _daggerC12Host();
+        return false;
+    }
     // C12 protocol §3.3.4→§3.3.5: SUM 01 arms the tracker, then GOT feeds the target.
     const QByteArray sumAck = QByteArrayLiteral("#TPUG2wSUM0162");
     if (socket.writeDatagram(sumAck, host, 5000) != sumAck.size()) {
         return false;
     }
     return socket.writeDatagram(payload, host, 5000) == payload.size();
+}
+
+// STRATUM: Reprogram the C12 gimbal's IP. Skydroid "IPV" set command:
+//   #TPUD<LEN><w>IPV<newIp><CHK>
+// where LEN is the payload length as a single hex nibble (IPv4 dotted-quad is
+// 7..15 chars so it always fits) and CHK is (sum of all preceding bytes) & 0xFF,
+// formatted as two uppercase hex chars. The camera reboots on the new IP.
+bool VideoManager::setC12CameraIp(const QString &newIp)
+{
+    const QString trimmed = newIp.trimmed();
+    const QHostAddress addr(trimmed);
+    if (addr.isNull() || addr.protocol() != QAbstractSocket::IPv4Protocol) {
+        qCWarning(VideoManagerLog) << "setC12CameraIp: invalid IPv4 address" << trimmed;
+        return false;
+    }
+    const QByteArray ipBytes = trimmed.toUtf8();
+    if (ipBytes.size() < 7 || ipBytes.size() > 15) {
+        qCWarning(VideoManagerLog) << "setC12CameraIp: IP length out of range" << trimmed;
+        return false;
+    }
+
+    const QByteArray lenHex = QByteArray::number(ipBytes.size(), 16).toUpper();
+    QByteArray base = QByteArrayLiteral("#TPUD") + lenHex + QByteArrayLiteral("wIPV") + ipBytes;
+    int sum = 0;
+    for (int i = 0; i < base.size(); ++i) {
+        sum += static_cast<unsigned char>(base.at(i));
+    }
+    const QByteArray payload = base + QByteArray::number(sum & 0xFF, 16).toUpper().rightJustified(2, '0');
+
+    const QString currentHost = _daggerC12Host();
+    const QHostAddress host(currentHost);
+    if (host.isNull()) {
+        qCWarning(VideoManagerLog) << "setC12CameraIp: invalid current host" << currentHost;
+        return false;
+    }
+    QUdpSocket socket;
+    if (socket.writeDatagram(payload, host, 5000) != payload.size()) {
+        qCWarning(VideoManagerLog) << "setC12CameraIp: UDP send failed to" << currentHost;
+        return false;
+    }
+
+    // Persist the new address so every subsequent C12 command goes to the reprogrammed
+    // camera. Camera reboots and comes up on this IP shortly.
+    if (auto *vs = SettingsManager::instance() ? SettingsManager::instance()->videoSettings() : nullptr) {
+        vs->daggerC12Host()->setRawValue(trimmed);
+    }
+    qCInfo(VideoManagerLog) << "setC12CameraIp: sent set-IP" << trimmed << "to" << currentHost;
+    return true;
 }
 
 // STRATUM: SIYI A2 mini SDK v3 packet builder + UDP sender.

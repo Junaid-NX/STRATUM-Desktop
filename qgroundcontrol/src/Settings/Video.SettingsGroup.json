@@ -106,6 +106,15 @@
             "keywords": "siyi,a2,dagger,camera,sdk,port,udp"
         },
         {
+            "name": "daggerC12Host",
+            "shortDesc": "Current IP address of the Dagger C12 gimbal camera.",
+            "longDesc": "Destination IP for the Skydroid/YunZhuo control channel used by the Dagger C12 camera-control panel. Factory default is 192.168.144.108. Change this when you have reprogrammed the camera to a new IP (e.g. to run more than one C12 on the same network).",
+            "type": "string",
+            "default": "192.168.144.108",
+            "label": "C12 Camera IP",
+            "keywords": "c12,skydroid,yunzhuo,dagger,camera,ip,host"
+        },
+        {
             "name": "tcpUrl",
             "shortDesc": "Network address and port for TCP video stream (e.g. 192.168.143.200:3001).",
             "longDesc": "TCP url address and port to bind to for video stream. Example: 192.168.143.200:3001",

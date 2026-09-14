@@ -60,6 +60,10 @@ public:
     Q_INVOKABLE bool sendCameraAction(const QString &action);
     Q_INVOKABLE bool sendCameraTrackPoint(int x, int y);
     Q_INVOKABLE bool sendSiyiCameraAction(const QString &action);
+    // STRATUM: reprogram the C12 gimbal's IP via Skydroid/YunZhuo "IPV" command.
+    // Sends to the current stored IP; on success rewrites videoSettings.daggerC12Host
+    // so subsequent commands go to the new address.
+    Q_INVOKABLE bool setC12CameraIp(const QString &newIp);
 
     void init(QQuickWindow *mainWindow);
     void startGStreamerInit();
