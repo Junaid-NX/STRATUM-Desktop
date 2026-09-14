@@ -5,7 +5,6 @@ import QtQuick.Layouts
 import QGroundControl
 import QGroundControl.Controls
 import QGroundControl.FactControls
-import QGroundControl.ScreenTools
 
 // STRATUM: Reprogram the Dagger C12 gimbal's IP.
 //
