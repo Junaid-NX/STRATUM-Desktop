@@ -144,84 +144,6 @@ Item {
         }
     }
 
-    // Palette swatch: Canvas-painted horizontal linear gradient inside a rounded
-    // frame. Uses the same _send() plumbing as everything else — this is a UI
-    // rework only, no command changes.
-    component PaletteChip : Item {
-        id: chip
-        property string chipText
-        property string chipCode
-        property var stops: []
-        property bool selected: false
-        signal chipClicked
-
-        implicitWidth:  ScreenTools.defaultFontPixelWidth * (root.compact ? 2.8 : 3.4)
-        implicitHeight: root._btnHeight * 0.85
-
-        Rectangle {
-            id: chipFrame
-            anchors.fill: parent
-            radius: 4
-            color: "transparent"
-            border.color: chip.selected
-                          ? root._accent
-                          : (chipMouse.containsMouse ? root._accentDim : Qt.rgba(1, 1, 1, 0.18))
-            border.width: chip.selected ? 2 : 1
-            Behavior on border.color { ColorAnimation { duration: 120 } }
-        }
-
-        Canvas {
-            id: swatch
-            anchors.fill: chipFrame
-            anchors.margins: chip.selected ? 3 : 2
-            antialiasing: true
-            onPaint: {
-                const ctx = getContext("2d")
-                ctx.reset()
-                const w = width
-                const h = height
-                const r = 3
-                ctx.beginPath()
-                ctx.moveTo(r, 0)
-                ctx.lineTo(w - r, 0)
-                ctx.quadraticCurveTo(w, 0, w, r)
-                ctx.lineTo(w, h - r)
-                ctx.quadraticCurveTo(w, h, w - r, h)
-                ctx.lineTo(r, h)
-                ctx.quadraticCurveTo(0, h, 0, h - r)
-                ctx.lineTo(0, r)
-                ctx.quadraticCurveTo(0, 0, r, 0)
-                ctx.closePath()
-                const g = ctx.createLinearGradient(0, 0, w, 0)
-                const s = chip.stops || []
-                for (let i = 0; i < s.length; i++) {
-                    g.addColorStop(s[i][0], s[i][1])
-                }
-                ctx.fillStyle = g
-                ctx.fill()
-            }
-            onWidthChanged:  requestPaint()
-            onHeightChanged: requestPaint()
-            Connections {
-                target: chip
-                function onSelectedChanged() { swatch.requestPaint() }
-                function onStopsChanged()    { swatch.requestPaint() }
-            }
-        }
-
-        ToolTip.visible: chipMouse.containsMouse
-        ToolTip.text:    chip.chipText
-        ToolTip.delay:   400
-
-        MouseArea {
-            id: chipMouse
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: chip.chipClicked()
-        }
-    }
-
     Rectangle {
         anchors.fill: parent
         visible: root.overlayMode
@@ -341,70 +263,39 @@ Item {
             onClicked: root._toggleTrack()
         }
 
-        // ---- False-colour palette (chip strip) ----------------------------
-        ColumnLayout {
-            id: paletteBlock
+        // ---- False-colour palette -----------------------------------------
+        RowLayout {
             Layout.fillWidth: true
-            spacing: root._spacing * 0.6
+            spacing: root._spacing
 
-            property string currentCode: "palette-off"
-            property string currentName: qsTr("Normal")
-
-            // (name, code, gradient stops) — stops are [position, cssColor] pairs.
-            // Gradients are hand-picked to resemble the C12's actual thermal LUTs.
-            readonly property var paletteData: [
-                { name: qsTr("Normal"),        code: "palette-off", stops: [[0.0, "#5a5a5a"], [1.0, "#d5d5d5"]] },
-                { name: qsTr("White Hot"),     code: "palette-01",  stops: [[0.0, "#000000"], [1.0, "#ffffff"]] },
-                { name: qsTr("Black Hot"),     code: "palette-0b",  stops: [[0.0, "#ffffff"], [1.0, "#000000"]] },
-                { name: qsTr("Red Hot"),       code: "palette-08",  stops: [[0.0, "#000000"], [0.55, "#b30000"], [1.0, "#ffe066"]] },
-                { name: qsTr("Iron Red"),      code: "palette-04",  stops: [[0.0, "#000000"], [0.35, "#4d0033"], [0.6, "#c8321e"], [0.85, "#ffd85c"], [1.0, "#ffffff"]] },
-                { name: qsTr("Rainbow"),       code: "palette-05",  stops: [[0.0, "#5b005b"], [0.2, "#0033ff"], [0.4, "#00cccc"], [0.6, "#33cc33"], [0.8, "#ffcc00"], [1.0, "#ff2b2b"]] },
-                { name: qsTr("Glimmer Night"), code: "palette-06",  stops: [[0.0, "#001a1a"], [0.5, "#00554d"], [1.0, "#3dffa6"]] },
-                { name: qsTr("Aurora"),        code: "palette-07",  stops: [[0.0, "#1a0033"], [0.4, "#5900b3"], [0.7, "#00cccc"], [1.0, "#33ff99"]] },
-                { name: qsTr("Sepia"),         code: "palette-03",  stops: [[0.0, "#2b1a00"], [0.5, "#a86a2c"], [1.0, "#f2e0b3"]] },
-                { name: qsTr("Jungle"),        code: "palette-09",  stops: [[0.0, "#002200"], [0.5, "#4d9900"], [1.0, "#e5ff33"]] },
-                { name: qsTr("Medical"),       code: "palette-0a",  stops: [[0.0, "#000000"], [0.5, "#00993d"], [1.0, "#e60000"]] },
-                { name: qsTr("Glory Hot"),     code: "palette-0c",  stops: [[0.0, "#000000"], [0.3, "#3c008a"], [0.55, "#c8321e"], [0.8, "#ffe066"], [1.0, "#ffffff"]] }
-            ]
-
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: root._spacing
-
-                QGCLabel {
-                    text: qsTr("PALETTE")
-                    color: root._accentDim
-                    font.pointSize: ScreenTools.smallFontPointSize
-                    font.letterSpacing: 1.5
-                }
-                Item { Layout.fillWidth: true }
-                QGCLabel {
-                    text: paletteBlock.currentName
-                    color: root._accent
-                    font.pointSize: ScreenTools.smallFontPointSize
-                    font.bold: true
-                }
+            QGCLabel {
+                text: qsTr("PALETTE")
+                color: root._accentDim
+                font.pointSize: ScreenTools.smallFontPointSize
+                Layout.alignment: Qt.AlignVCenter
             }
-
-            Flow {
+            QGCComboBox {
+                id: paletteCombo
                 Layout.fillWidth: true
-                spacing: root._spacing
-
-                Repeater {
-                    model: paletteBlock.paletteData
-                    delegate: PaletteChip {
-                        required property var modelData
-                        chipText: modelData.name
-                        chipCode: modelData.code
-                        stops:    modelData.stops
-                        selected: paletteBlock.currentCode === modelData.code
-                        onChipClicked: {
-                            if (root._send(modelData.code)) {
-                                paletteBlock.currentCode = modelData.code
-                                paletteBlock.currentName = modelData.name
-                                root.statusMessage(qsTr("Palette: %1").arg(modelData.name))
-                            }
-                        }
+                textRole: "text"
+                model: ListModel {
+                    ListElement { text: qsTr("Normal");        code: "palette-off" }
+                    ListElement { text: qsTr("White Hot");     code: "palette-01" }
+                    ListElement { text: qsTr("Black Hot");     code: "palette-0b" }
+                    ListElement { text: qsTr("Red Hot");       code: "palette-08" }
+                    ListElement { text: qsTr("Iron Red");      code: "palette-04" }
+                    ListElement { text: qsTr("Rainbow");       code: "palette-05" }
+                    ListElement { text: qsTr("Glimmer Night"); code: "palette-06" }
+                    ListElement { text: qsTr("Aurora");        code: "palette-07" }
+                    ListElement { text: qsTr("Sepia");         code: "palette-03" }
+                    ListElement { text: qsTr("Jungle");        code: "palette-09" }
+                    ListElement { text: qsTr("Medical");       code: "palette-0a" }
+                    ListElement { text: qsTr("Glory Hot");     code: "palette-0c" }
+                }
+                onActivated: (index) => {
+                    const code = model.get(index).code
+                    if (root._send(code)) {
+                        root.statusMessage(qsTr("Palette: %1").arg(model.get(index).text))
                     }
                 }
             }

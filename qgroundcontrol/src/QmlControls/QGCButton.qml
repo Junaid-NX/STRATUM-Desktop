@@ -10,7 +10,10 @@ import QGroundControl.Controls
 ///     If icon only, icon will be centered
 Button {
     property bool primary: false
-    property bool showBorder: qgcPal.globalTheme === QGCPalette.Light
+    // STRATUM: always draw a hairline border in dark theme too so the button silhouette
+    // is legible in direct sunlight against the graphite panel stack. Callers can still
+    // override showBorder: false where an unadorned pill/chip is desired.
+    property bool showBorder: qgcPal.globalTheme === QGCPalette.Light || qgcPal.globalTheme === QGCPalette.Dark
     property real backRadius: ScreenTools.defaultBorderRadius
     property real heightFactor: 0.5
     property string iconSource: ""
