@@ -72,9 +72,10 @@ ToolIndicatorPage {
                 Layout.fillWidth: true
                 text: qsTr("Configure")
                 imageResource: "/res/GearWithPaperPlane.svg"
-                // STRATUM: hidden per operator UX spec (no vehicle-configuration flow in
-                // the field). Flip to true to bring it back.
-                visible: false
+                // STRATUM: re-enabled so operators can reach Joystick calibration
+                // (and firmware / parameters / sensors) via the stock QGC Vehicle
+                // Configuration flow. Set visible: false to hide again if needed.
+                visible: true
                 onClicked: {
                     if (mainWindow.allowViewSwitch()) {
                         mainWindow.closeIndicatorDrawer()

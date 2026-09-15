@@ -64,6 +64,9 @@ public:
     // Sends to the current stored IP; on success rewrites videoSettings.daggerC12Host
     // so subsequent commands go to the new address.
     Q_INVOKABLE bool setC12CameraIp(const QString &newIp);
+    // STRATUM: query the C12 gimbal for its actual IP with the Skydroid "rIPV" command.
+    // Returns the IPv4 string on success or an empty string on failure/timeout.
+    Q_INVOKABLE QString readC12CameraIp(int timeoutMs = 1000);
 
     void init(QQuickWindow *mainWindow);
     void startGStreamerInit();

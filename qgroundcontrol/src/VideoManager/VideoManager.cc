@@ -29,6 +29,7 @@
 #include <QtConcurrent/QtConcurrent>
 #include <QtCore/QApplicationStatic>
 #include <QtCore/QDir>
+#include <QtCore/QElapsedTimer>
 #include <QtCore/QEventLoop>
 #include <QtCore/QFutureWatcher>
 #include <QtCore/QPointer>
@@ -230,6 +231,69 @@ bool VideoManager::setC12CameraIp(const QString &newIp)
     }
     qCInfo(VideoManagerLog) << "setC12CameraIp: sent set-IP" << trimmed << "to" << currentHost;
     return true;
+}
+
+// STRATUM: Ask the C12 gimbal for its actual IP with `#TPUD2rIPV0053` (uppercase
+// equivalent of the doc's `#tpUD2rIPV0093`). The camera answers with
+// `#TPUD<L>rIPV<ip><chk>` (case-insensitive) on the same UDP socket. Returns
+// an empty string if the camera doesn't reply within timeoutMs.
+QString VideoManager::readC12CameraIp(int timeoutMs)
+{
+    const QString currentHost = _daggerC12Host();
+    const QHostAddress host(currentHost);
+    if (host.isNull()) {
+        qCWarning(VideoManagerLog) << "readC12CameraIp: invalid current host" << currentHost;
+        return QString();
+    }
+
+    QUdpSocket socket;
+    if (!socket.bind(QHostAddress::AnyIPv4, 0)) {
+        qCWarning(VideoManagerLog) << "readC12CameraIp: bind failed" << socket.errorString();
+        return QString();
+    }
+    // Send both prefix cases: we know the C12 accepts uppercase writes, but the
+    // protocol doc's rIPV example uses lowercase and some firmware is picky.
+    static const QByteArray kReadIpUpper = QByteArrayLiteral("#TPUD2rIPV0053");
+    static const QByteArray kReadIpLower = QByteArrayLiteral("#tpUD2rIPV0093");
+    if (socket.writeDatagram(kReadIpUpper, host, 5000) != kReadIpUpper.size()
+        || socket.writeDatagram(kReadIpLower, host, 5000) != kReadIpLower.size()) {
+        qCWarning(VideoManagerLog) << "readC12CameraIp: send failed to" << currentHost;
+        return QString();
+    }
+
+    QElapsedTimer timer;
+    timer.start();
+    while (timer.elapsed() < timeoutMs) {
+        const int remaining = timeoutMs - static_cast<int>(timer.elapsed());
+        if (!socket.waitForReadyRead(qMax(1, remaining))) {
+            continue;
+        }
+        while (socket.hasPendingDatagrams()) {
+            QByteArray buf(static_cast<int>(socket.pendingDatagramSize()), Qt::Uninitialized);
+            socket.readDatagram(buf.data(), buf.size());
+            int matchIdx = buf.indexOf("rIPV");
+            if (matchIdx < 0) {
+                matchIdx = buf.indexOf("RIPV");
+            }
+            if (matchIdx < 1) {
+                continue;
+            }
+            bool ok = false;
+            const int len = QString(QChar(buf.at(matchIdx - 1))).toInt(&ok, 16);
+            if (!ok || len < 7 || len > 15 || buf.size() < matchIdx + 4 + len) {
+                continue;
+            }
+            const QString ip = QString::fromLatin1(buf.mid(matchIdx + 4, len));
+            const QHostAddress a(ip);
+            if (a.isNull() || a.protocol() != QAbstractSocket::IPv4Protocol) {
+                continue;
+            }
+            qCInfo(VideoManagerLog) << "readC12CameraIp: camera at" << currentHost << "reports IP" << ip;
+            return ip;
+        }
+    }
+    qCInfo(VideoManagerLog) << "readC12CameraIp: no reply from" << currentHost << "within" << timeoutMs << "ms";
+    return QString();
 }
 
 // STRATUM: SIYI A2 mini SDK v3 packet builder + UDP sender.
